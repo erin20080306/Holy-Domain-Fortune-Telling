@@ -37,7 +37,7 @@ export function OpeningScreen() {
         </div>
       </div>
       <div
-        onClick={() => nav('/auth?mode=login')}
+        onClick={() => nav('/guide')}
         className={`absolute bottom-16 z-20 flex flex-col items-center cursor-pointer group transition-opacity duration-1000 delay-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       >
         <span className="text-white/70 tracking-[0.4em] uppercase mb-5 group-hover:text-white transition-colors duration-300 flex flex-col items-center gap-2">

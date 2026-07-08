@@ -34,13 +34,7 @@ export function PlansScreen() {
 
   return (
     <div className="w-full animate-[fadeIn_0.5s_ease-out]">
-      <button
-        onClick={() => nav('/')}
-        className="absolute top-8 left-8 text-white/30 hover:text-[#A89882] transition-colors"
-      >
-        <ChevronLeft size={24} />
-      </button>
-      <div className="text-center mb-10 pt-16">
+      <div className="text-center mb-10">
         <p className="text-[#A89882] text-[10px] tracking-[0.3em] font-semibold mb-2 flex justify-center gap-2 items-center">
           <span>解鎖命運</span>
           <span className="opacity-70">UNLOCK DESTINY</span>

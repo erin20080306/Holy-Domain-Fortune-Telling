@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import {
   applyPerfClass,
   getPerfPreference,
@@ -10,7 +8,6 @@ import {
 } from '../lib/device/performanceMode';
 
 export function SettingsScreen() {
-  const nav = useNavigate();
   const [pref, setPref] = useState<PerfPreference>(getPerfPreference());
   const low = isLowPerformance(pref);
 
@@ -28,13 +25,7 @@ export function SettingsScreen() {
 
   return (
     <div className="w-full max-w-sm mx-auto animate-[fadeIn_0.5s_ease-out]">
-      <button
-        onClick={() => nav('/app')}
-        className="absolute top-8 left-8 text-white/30 hover:text-[#A89882] transition-colors"
-      >
-        <ChevronLeft size={24} />
-      </button>
-      <div className="text-center mb-10 pt-16">
+      <div className="text-center mb-10">
         <h2 className="text-3xl font-serif text-white tracking-widest mb-2">設定</h2>
         <p className="text-[#A89882] text-xs tracking-[0.3em] uppercase">SETTINGS</p>
       </div>

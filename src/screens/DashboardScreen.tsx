@@ -29,13 +29,7 @@ export function DashboardScreen() {
 
   return (
     <div className="animate-[fadeIn_0.5s_ease-out]">
-      <button
-        onClick={() => nav('/')}
-        className="absolute top-8 left-8 text-white/30 hover:text-[#A89882] transition-colors"
-      >
-        <Icons.ChevronLeft size={24} />
-      </button>
-      <div className="mb-10 text-center md:text-left pt-16">
+      <div className="mb-10 text-center md:text-left">
         <p className="text-[#A89882] text-[10px] tracking-[0.3em] font-semibold mb-3 flex flex-col md:flex-row items-center md:items-start gap-2">
           <span>命理典藏</span>
           <span className="opacity-60">DESTINY COLLECTION</span>
@@ -68,7 +62,7 @@ export function DashboardScreen() {
               </div>
               <div className="relative z-10 mt-auto">
                 <h3 className="text-base font-light text-slate-100 tracking-widest mb-1">{cat.name}</h3>
-                <p className="text-[8px] text-[#A89882]/80 font-semibold tracking-[0.1em]">{cat.desc}</p>
+                <p className="text-[8px] text-[#A89882]/80 font-semibold tracking-[0.1em]">{cat.subtitle}</p>
               </div>
             </div>
           );

@@ -8,12 +8,14 @@ import {
 } from 'react-router-dom';
 import { AuthProvider, useAuth } from './state/AuthContext';
 import { OpeningScreen } from './screens/OpeningScreen';
+import { GuideScreen } from './screens/GuideScreen';
 import { AuthScreen } from './screens/AuthScreen';
 import { PlansScreen } from './screens/PlansScreen';
 import { DashboardScreen } from './screens/DashboardScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { AdminDashboard } from './screens/AdminDashboard';
 import { AuditLogScreen } from './screens/AuditLogScreen';
+import { SplitLayout } from './components/SplitLayout';
 import { InstallBanner } from './components/InstallBanner';
 import { UpdateBanner } from './components/UpdateBanner';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -50,13 +52,37 @@ function Shell() {
       </div>
       <Routes>
         <Route path="/" element={<OpeningScreen />} />
-        <Route path="/auth" element={<AuthScreen />} />
-        <Route path="/plans" element={<PlansScreen />} />
+        <Route
+          path="/guide"
+          element={
+            <SplitLayout showBack>
+              <GuideScreen />
+            </SplitLayout>
+          }
+        />
+        <Route
+          path="/auth"
+          element={
+            <SplitLayout showBack>
+              <AuthScreen />
+            </SplitLayout>
+          }
+        />
+        <Route
+          path="/plans"
+          element={
+            <SplitLayout showBack>
+              <PlansScreen />
+            </SplitLayout>
+          }
+        />
         <Route
           path="/app"
           element={
             <RequireAuth>
-              <DashboardScreen />
+              <SplitLayout showLogout>
+                <DashboardScreen />
+              </SplitLayout>
             </RequireAuth>
           }
         />
@@ -64,24 +90,26 @@ function Shell() {
           path="/settings"
           element={
             <RequireAuth>
-              <SettingsScreen />
+              <SplitLayout showLogout>
+                <SettingsScreen />
+              </SplitLayout>
             </RequireAuth>
           }
         />
         <Route
           path="/admin"
           element={
-            <RequireAuth>
+            <SplitLayout showLogout>
               <AdminDashboard />
-            </RequireAuth>
+            </SplitLayout>
           }
         />
         <Route
           path="/admin/audit"
           element={
-            <RequireAuth>
+            <SplitLayout showLogout>
               <AuditLogScreen />
-            </RequireAuth>
+            </SplitLayout>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

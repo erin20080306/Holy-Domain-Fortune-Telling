@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User, Phone, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
 import { useAuth } from '../state/AuthContext';
 
 const ADMIN_EMAIL = 'erin20080306@gmail.com';
@@ -51,13 +51,7 @@ export function AuthScreen() {
 
   return (
     <div className="w-full max-w-sm mx-auto animate-[fadeIn_0.5s_ease-out]">
-      <button
-        onClick={() => nav('/')}
-        className="absolute top-8 left-8 text-white/30 hover:text-[#A89882] transition-colors"
-      >
-        <ChevronLeft size={24} />
-      </button>
-      <div className="text-center mb-10 pt-16">
+      <div className="text-center mb-10">
         <h2 className="text-3xl font-serif text-white tracking-widest mb-2">
           {mode === 'login' ? '登入星域' : '註冊命盤'}
         </h2>
