@@ -211,6 +211,8 @@ function EditUserModal({
   const [note, setNote] = useState('');
   const [resetUsage, setResetUsage] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState('');
 
   const save = async () => {
     setBusy(true);
@@ -222,6 +224,14 @@ function EditUserModal({
     });
     setBusy(false);
     onSaved();
+  };
+
+  const sendReset = async () => {
+    setPwMsg('');
+    setPwBusy(true);
+    const res = await api.admin.sendPasswordReset(user.user_id);
+    setPwBusy(false);
+    setPwMsg(res?.ok ? '已寄出密碼重設信給該使用者。' : res?.message ?? '寄送失敗，請稍後再試。');
   };
 
   return (
@@ -273,6 +283,23 @@ function EditUserModal({
           <button className="btn ghost" onClick={onClose}>
             取消
           </button>
+        </div>
+
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 16, paddingTop: 16 }}>
+          <label className="label">密碼協助</label>
+          <button
+            className="btn ghost"
+            style={{ width: '100%' }}
+            disabled={pwBusy}
+            onClick={() => void sendReset()}
+          >
+            {pwBusy ? '寄送中…' : '寄送密碼重設信給此使用者'}
+          </button>
+          {pwMsg && (
+            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+              {pwMsg}
+            </p>
+          )}
         </div>
       </div>
     </div>

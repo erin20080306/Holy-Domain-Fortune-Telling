@@ -45,6 +45,11 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(body),
       }),
+    sendPasswordReset: (userId: string) =>
+      request<{ ok: boolean; message?: string }>(
+        `/api/admin/users/${userId}/reset-password`,
+        { method: 'POST' },
+      ),
     unmatchedPayments: () => request<any>('/api/admin/payments/unmatched'),
     matchPayment: (eventId: string, body: Record<string, unknown>) =>
       request<any>(`/api/admin/payments/${eventId}/match`, {

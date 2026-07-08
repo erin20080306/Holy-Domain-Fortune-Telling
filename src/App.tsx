@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './state/AuthContext';
 import { OpeningScreen } from './screens/OpeningScreen';
 import { GuideScreen } from './screens/GuideScreen';
 import { AuthScreen } from './screens/AuthScreen';
+import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { PlansScreen } from './screens/PlansScreen';
 import { DashboardScreen } from './screens/DashboardScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
@@ -67,6 +68,14 @@ function Shell() {
           element={
             <SplitLayout showBack>
               <AuthScreen />
+            </SplitLayout>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <SplitLayout showBack>
+              <ResetPasswordScreen />
             </SplitLayout>
           }
         />

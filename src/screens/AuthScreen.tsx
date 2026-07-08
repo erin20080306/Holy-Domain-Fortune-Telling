@@ -9,8 +9,8 @@ const ADMIN_EMAIL = 'erin20080306@gmail.com';
 export function AuthScreen() {
   const [params] = useSearchParams();
   const nav = useNavigate();
-  const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>(
+  const { signIn, signUp, resetPassword } = useAuth();
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(
     params.get('mode') === 'login' ? 'login' : 'register',
   );
 
@@ -19,12 +19,30 @@ export function AuthScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
   const validPhone = (v: string) => /^[+()\-\s\d]{7,20}$/.test(v);
 
+  const switchMode = (m: 'login' | 'register' | 'forgot') => {
+    setError('');
+    setNotice('');
+    setMode(m);
+  };
+
   const submit = async () => {
     setError('');
+    setNotice('');
+
+    if (mode === 'forgot') {
+      if (!email) return setError('請輸入 email。');
+      setBusy(true);
+      const res = await resetPassword(email);
+      setBusy(false);
+      if (res.error) return setError(res.error);
+      return setNotice('重設信已寄出，請至信箱點擊連結重設密碼。');
+    }
+
     if (!email || !password) return setError('請輸入 email 與密碼。');
     if (mode === 'register') {
       if (!name) return setError('請輸入姓名。');
@@ -57,10 +75,10 @@ export function AuthScreen() {
     <div className="w-full max-w-sm mx-auto animate-[fadeIn_0.5s_ease-out]">
       <div className="text-center mb-10">
         <h2 className="text-3xl font-serif text-white tracking-widest mb-2">
-          {mode === 'login' ? '登入星域' : '註冊命盤'}
+          {mode === 'login' ? '登入星域' : mode === 'register' ? '註冊命盤' : '重設密碼'}
         </h2>
         <p className="text-[#A89882] text-xs tracking-[0.3em] uppercase">
-          {mode === 'login' ? 'Sign In' : 'Create Account'}
+          {mode === 'login' ? 'Sign In' : mode === 'register' ? 'Create Account' : 'Reset Password'}
         </p>
       </div>
       <form onSubmit={(e) => { e.preventDefault(); void submit(); }} className="space-y-6">
@@ -101,20 +119,42 @@ export function AuthScreen() {
             />
           </div>
         )}
-        <div className="relative">
-          <Lock className="absolute left-0 top-3 text-white/30" size={18} />
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="密碼 Password"
-            className="w-full bg-transparent border-b border-white/20 pl-8 pr-4 py-3 text-white font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 text-sm"
-          />
-        </div>
+        {mode !== 'forgot' && (
+          <div className="relative">
+            <Lock className="absolute left-0 top-3 text-white/30" size={18} />
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="密碼 Password"
+              className="w-full bg-transparent border-b border-white/20 pl-8 pr-4 py-3 text-white font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 text-sm"
+            />
+          </div>
+        )}
+
+        {mode === 'login' && (
+          <div className="text-right">
+            <span
+              onClick={() => switchMode('forgot')}
+              className="text-[#A89882]/80 text-xs tracking-wider cursor-pointer hover:text-white transition-colors"
+            >
+              忘記密碼？
+            </span>
+          </div>
+        )}
+
+        {mode === 'forgot' && (
+          <p className="text-white/40 text-xs tracking-wider leading-relaxed">
+            輸入註冊時的 email，我們會寄送密碼重設連結到你的信箱。
+          </p>
+        )}
 
         {error && (
           <p style={{ color: '#e0a97a', fontSize: 14, margin: '4px 0 12px' }}>{error}</p>
+        )}
+        {notice && (
+          <p style={{ color: '#8fcaa0', fontSize: 14, margin: '4px 0 12px' }}>{notice}</p>
         )}
 
         <button
@@ -122,23 +162,32 @@ export function AuthScreen() {
           disabled={busy}
           className="w-full py-4 mt-8 bg-[#A89882] text-[#050508] font-medium tracking-[0.2em] rounded-full hover:bg-white transition-colors flex justify-center items-center gap-2"
         >
-          {busy ? '處理中…' : mode === 'login' ? '確認登入' : '完成註冊'}
+          {busy ? '處理中…' : mode === 'login' ? '確認登入' : mode === 'register' ? '完成註冊' : '寄送重設信'}
           <ArrowRight size={16} />
         </button>
       </form>
       <div className="mt-8 text-center">
-        <p className="text-white/50 text-xs tracking-wider">
-          {mode === 'login' ? '尚未註冊？' : '已有專屬帳戶？'}
-          <span
-            onClick={() => {
-              setError('');
-              setMode(mode === 'login' ? 'register' : 'login');
-            }}
-            className="text-[#A89882] ml-2 cursor-pointer hover:text-white transition-colors border-b border-[#A89882]/30 pb-0.5"
-          >
-            {mode === 'login' ? '建立專屬命盤' : '立即登入'}
-          </span>
-        </p>
+        {mode === 'forgot' ? (
+          <p className="text-white/50 text-xs tracking-wider">
+            想起密碼了？
+            <span
+              onClick={() => switchMode('login')}
+              className="text-[#A89882] ml-2 cursor-pointer hover:text-white transition-colors border-b border-[#A89882]/30 pb-0.5"
+            >
+              返回登入
+            </span>
+          </p>
+        ) : (
+          <p className="text-white/50 text-xs tracking-wider">
+            {mode === 'login' ? '尚未註冊？' : '已有專屬帳戶？'}
+            <span
+              onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
+              className="text-[#A89882] ml-2 cursor-pointer hover:text-white transition-colors border-b border-[#A89882]/30 pb-0.5"
+            >
+              {mode === 'login' ? '建立專屬命盤' : '立即登入'}
+            </span>
+          </p>
+        )}
       </div>
     </div>
   );

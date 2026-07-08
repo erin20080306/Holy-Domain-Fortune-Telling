@@ -30,6 +30,8 @@ interface AuthState {
     phone: string;
     password: string;
   }) => Promise<{ error?: string }>;
+  resetPassword: (email: string) => Promise<{ error?: string }>;
+  updatePassword: (password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -114,6 +116,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (!error) return {};
+    const msg = error.message?.toLowerCase() ?? '';
+    const code = (error as { code?: string }).code ?? '';
+    if (error.status === 429 || code.includes('rate_limit') || msg.includes('rate limit'))
+      return { error: '寄信次數過多，請稍後再試。' };
+    return { error: '無法寄送重設信，請確認 Email 後再試。' };
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (!error) return {};
+    const msg = error.message?.toLowerCase() ?? '';
+    if (msg.includes('password'))
+      return { error: '密碼強度不足，請使用至少 8 碼並包含英數字。' };
+    if (msg.includes('session') || msg.includes('expired') || msg.includes('token'))
+      return { error: '重設連結已失效，請重新申請忘記密碼。' };
+    return { error: '密碼更新失敗，請稍後再試。' };
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     // Clear local PWA scratch on logout.
@@ -136,6 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshSubscription,
         signIn,
         signUp,
+        resetPassword,
+        updatePassword,
         signOut,
       }}
     >
