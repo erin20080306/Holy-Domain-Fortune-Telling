@@ -23,6 +23,7 @@ export function AuthScreen() {
   const [busy, setBusy] = useState(false);
 
   const validPhone = (v: string) => /^[+()\-\s\d]{7,20}$/.test(v);
+  const validName = (v: string) => /^[\u4e00-\u9fff a-zA-Z]+$/.test(v);
 
   const switchMode = (m: 'login' | 'register' | 'forgot') => {
     setError('');
@@ -46,6 +47,7 @@ export function AuthScreen() {
     if (!email || !password) return setError('請輸入 email 與密碼。');
     if (mode === 'register') {
       if (!name) return setError('請輸入姓名。');
+      if (!validName(name)) return setError('姓名只能輸入中文或英文。');
       if (!validPhone(phone)) return setError('電話格式不正確。');
       if (password.length < 8) return setError('密碼至少需 8 碼。');
     }
