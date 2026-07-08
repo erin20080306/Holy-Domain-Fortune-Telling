@@ -42,17 +42,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         limits: planLimitsFromEnv(),
       });
     } catch (err) {
-      // Subscription/quota lookup failed (e.g. transient DB error). Always
-      // return JSON so the client can recover instead of hanging.
+      // Subscription/quota lookup failed (e.g. transient DB error, or the
+      // backend is not using a real service_role key so RLS blocks inserts).
+      // Always return JSON so the client can recover instead of hanging.
+      const detail = err instanceof Error ? err.message : String(err);
       console.error('[fortune/generate] subscription/quota lookup failed', {
         userId: user.userId,
         usage,
-        error: err instanceof Error ? err.message : String(err),
+        error: detail,
       });
       return sendJson(res, 200, {
         ok: false,
         message: USER_MESSAGES.analysisBusy,
-        debug: 'quota_lookup_failed',
+        debug: `quota_lookup_failed: ${detail}`,
       });
     }
 
@@ -68,20 +70,39 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   let content: string | null = null;
   try {
     content = await generateReading(usage, body, user.userId);
-  } catch {
+  } catch (err) {
     // API failure -> do NOT decrement quota.
-    return sendJson(res, 200, { ok: false, message: USER_MESSAGES.analysisBusy });
+    const detail = err instanceof Error ? err.message : String(err);
+    return sendJson(res, 200, {
+      ok: false,
+      message: USER_MESSAGES.analysisBusy,
+      debug: `generate_threw: ${detail}`,
+    });
   }
 
   if (!content) {
-    return sendJson(res, 200, { ok: false, message: USER_MESSAGES.analysisBusy });
+    return sendJson(res, 200, {
+      ok: false,
+      message: USER_MESSAGES.analysisBusy,
+      debug: 'generate_returned_empty (no provider key or provider error)',
+    });
   }
 
   // Only now, after successful non-cached generation, do we consume quota.
   // Admins are unlimited, so their usage is never counted.
   const fromCache = body.__from_cache === true;
   if (!admin && !fromCache) {
-    await incrementUsage(user.userId, usage);
+    try {
+      await incrementUsage(user.userId, usage);
+    } catch (err) {
+      // Usage increment failed (e.g. RLS blocking the RPC). Don't fail the
+      // request since content was already produced; just log it.
+      console.error('[fortune/generate] incrementUsage failed', {
+        userId: user.userId,
+        usage,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   return sendJson(res, 200, {

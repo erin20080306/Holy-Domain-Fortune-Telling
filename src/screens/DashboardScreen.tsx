@@ -59,7 +59,8 @@ export function DashboardScreen() {
       if (res?.ok) {
         setResult(res.content);
       } else {
-        setResult(res?.message ?? '目前服務暫時無法使用，請稍後再試。');
+        const base = res?.message ?? '目前服務暫時無法使用，請稍後再試。';
+        setResult(res?.debug ? `${base}\n\n[debug] ${res.debug}` : base);
       }
     } catch {
       setResult('目前服務暫時無法使用，請稍後再試。');
@@ -137,27 +138,39 @@ export function DashboardScreen() {
 
             {NEEDS_BIRTH.has(selectedCat.id) && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                />
-                <input
-                  type="time"
-                  value={birthTime}
-                  onChange={(e) => setBirthTime(e.target.value)}
-                  className="w-full bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                />
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                >
-                  <option value="">性別（選填）</option>
-                  <option value="男">男</option>
-                  <option value="女">女</option>
-                </select>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生日期</span>
+                  <input
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生時間</span>
+                  <input
+                    type="time"
+                    value={birthTime}
+                    onChange={(e) => setBirthTime(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">性別（選填）</span>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                  >
+                    <option value="">請選擇</option>
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                  </select>
+                </label>
               </div>
             )}
 
