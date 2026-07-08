@@ -14,6 +14,9 @@ export default defineConfig({
       manifest: false, // we ship a hand-written public/manifest.webmanifest
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+        // Large decorative art (引路人) is served via the runtime image cache
+        // below instead of being precached in the app shell.
+        globIgnores: ['**/guide.png'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [
           /^\/api\//,

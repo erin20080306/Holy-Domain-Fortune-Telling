@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '../state/AuthContext';
+import { clearAdminSession } from '../lib/adminSession';
 
 // 分屏佈局：右/上為引路人展示區，左/下為內容功能區。全域頂部導航含首頁與登出。
 export function SplitLayout({
@@ -17,6 +18,7 @@ export function SplitLayout({
   const { signOut } = useAuth();
 
   const logout = async () => {
+    clearAdminSession();
     await signOut();
     nav('/');
   };

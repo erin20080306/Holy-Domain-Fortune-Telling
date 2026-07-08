@@ -22,12 +22,14 @@ import { OfflineBanner } from './components/OfflineBanner';
 import { registerServiceWorker } from './pwa/registerServiceWorker';
 import { subscribeNetworkStatus } from './pwa/networkStatus';
 import { applyPerfClass } from './lib/device/performanceMode';
+import { isAdminSession } from './lib/adminSession';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
   const loc = useLocation();
   if (loading) return <div className="app-shell muted">載入中…</div>;
-  if (!session) return <Navigate to="/auth?mode=login" replace state={{ from: loc }} />;
+  if (!session && !isAdminSession())
+    return <Navigate to="/auth?mode=login" replace state={{ from: loc }} />;
   return <>{children}</>;
 }
 

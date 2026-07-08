@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
 import { useAuth } from '../state/AuthContext';
+import { setAdminSession } from '../lib/adminSession';
 
 const ADMIN_EMAIL = 'erin20080306@gmail.com';
 const ADMIN_PASSWORD = 'superadmin';
@@ -35,6 +36,7 @@ export function AuthScreen() {
 
     // Admin login check
     if (mode === 'login' && email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      setAdminSession();
       setBusy(false);
       nav('/admin');
       return;
