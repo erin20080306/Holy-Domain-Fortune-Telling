@@ -1,7 +1,7 @@
 import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
 import { getAuthedUser } from '../_lib/auth.js';
 import { ensureSubscription } from '../_lib/services/SubscriptionRepository.js';
-import { getOrCreateQuota } from '../_lib/services/UsageRepository.js';
+import { getOrCreateQuota, getUsageBucketKey } from '../_lib/services/UsageRepository.js';
 import { planLimitsFromEnv } from '../_lib/env.js';
 import { effectivePlan } from '../../shared/entitlement.js';
 import { USER_MESSAGES } from '../../shared/productCopy.js';
@@ -13,7 +13,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   try {
     const sub = await ensureSubscription(user.userId);
-    const quota = await getOrCreateQuota(user.userId, sub.plan);
+    const [quota, tarotQuota] = await Promise.all([
+      getOrCreateQuota(user.userId, sub.plan, getUsageBucketKey('short_reading')),
+      getOrCreateQuota(user.userId, sub.plan, getUsageBucketKey('tarot')),
+    ]);
     const plan = effectivePlan(sub.plan, sub.status);
     const limits = planLimitsFromEnv()[plan];
 
@@ -24,7 +27,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         short_reading: { used: quota.free_ai_count, limit: limits.shortAiPerMonth },
         premium_report: { used: quota.premium_report_count, limit: limits.premiumReportPerMonth },
         premium_chat: { used: quota.premium_chat_count, limit: limits.premiumChatPerMonth },
-        tarot: { used: quota.tarot_draw_count, limit: limits.tarotPerDay },
+        tarot: { used: tarotQuota.tarot_draw_count, limit: limits.tarotPerDay },
       },
     });
   } catch {

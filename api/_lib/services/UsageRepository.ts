@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from '../supabaseAdmin.js';
 import { isMissingSupabaseSchemaError } from '../supabaseErrors.js';
-import { getTaipeiUsageMonth } from '../../../shared/usageMonth.js';
+import { getTaipeiDayKey, getTaipeiUsageMonth } from '../../../shared/usageMonth.js';
 import type { PlanId, UsageType } from '../../../shared/plans.js';
 
 export interface UsageQuotaRow {
@@ -23,6 +23,12 @@ const COLUMN: Record<UsageType, keyof UsageQuotaRow> = {
   bazi: 'bazi_count',
   ziwei: 'ziwei_count',
 };
+
+// Most usage resets monthly. Tarot is promised as a daily draw, so it uses the
+// Taipei day key while still sharing the existing quota table.
+export function getUsageBucketKey(usage: UsageType, date = new Date()): string {
+  return usage === 'tarot' ? getTaipeiDayKey(date) : getTaipeiUsageMonth(date);
+}
 
 function emptyQuota(userId: string, plan: PlanId, month: string): UsageQuotaRow {
   return {

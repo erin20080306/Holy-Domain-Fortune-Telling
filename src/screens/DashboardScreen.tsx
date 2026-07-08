@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { FORTUNE_CATEGORIES } from '@shared/categories';
@@ -70,6 +71,7 @@ export function DashboardScreen() {
   };
 
   return (
+    <>
     <div className="animate-[fadeIn_0.5s_ease-out]">
       <div className="mb-10 text-center md:text-left">
         <p className="text-[#A89882] text-[10px] tracking-[0.3em] font-semibold mb-3 flex flex-col md:flex-row items-center md:items-start gap-2">
@@ -110,7 +112,7 @@ export function DashboardScreen() {
       </div>
 
       {selectedCat && (
-        <div ref={panelRef} className="scroll-mt-20 bg-white/[0.02] backdrop-blur-md border border-[#A89882]/20 rounded-[2rem] p-6 md:p-8 mt-8 animate-[fadeIn_0.4s_ease-out]">
+        <div ref={panelRef} className="scroll-mt-6 md:scroll-mt-20 bg-white/[0.02] backdrop-blur-md border border-[#A89882]/20 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-8 mt-6 md:mt-8 animate-[fadeIn_0.4s_ease-out]">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-sm text-white tracking-widest font-light">{selectedCat.name}</span>
             <span className="text-[9px] text-[#A89882]/60 tracking-widest mt-0.5">{selectedCat.subtitle}</span>
@@ -123,7 +125,7 @@ export function DashboardScreen() {
               onChange={(e) => setQuestion(e.target.value)}
               rows={2}
               placeholder="想詢問的問題（選填，例如：近期的事業發展如何？）"
-              className="w-full bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 resize-none"
+              className="w-full bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 resize-none"
             />
 
             {NEEDS_NAME.has(selectedCat.id) && (
@@ -132,7 +134,7 @@ export function DashboardScreen() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="姓名 Name"
-                className="w-full bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30"
+                className="w-full bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30"
               />
             )}
 
@@ -145,7 +147,7 @@ export function DashboardScreen() {
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
                     style={{ colorScheme: 'dark' }}
-                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
@@ -155,7 +157,7 @@ export function DashboardScreen() {
                     value={birthTime}
                     onChange={(e) => setBirthTime(e.target.value)}
                     style={{ colorScheme: 'dark' }}
-                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
@@ -164,7 +166,7 @@ export function DashboardScreen() {
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     style={{ colorScheme: 'dark' }}
-                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
                   >
                     <option value="">請選擇</option>
                     <option value="男">男</option>
@@ -206,7 +208,7 @@ export function DashboardScreen() {
           </div>
           <div className="space-y-4">
             {result.split('\n\n').map((paragraph, idx) => (
-              <p key={idx} className="text-slate-300/90 leading-relaxed tracking-widest text-sm font-light text-justify">
+            <p key={idx} className="text-slate-300/90 leading-relaxed tracking-widest text-sm font-light text-justify break-words">
                 {paragraph}
               </p>
             ))}
@@ -223,9 +225,9 @@ export function DashboardScreen() {
           <span className="text-[10px] opacity-70 border-l border-black/20 pl-3">目前方案：{PLAN_LABEL[plan]}</span>
           <Icons.ArrowRight size={16} className="group-hover:translate-x-1 transition-transform ml-1" />
         </button>
-        <div className="flex gap-4">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
           <button
-            className="px-6 py-4 rounded-full border border-[#A89882]/40 text-[#A89882] tracking-[0.2em] text-xs hover:bg-[#A89882] hover:text-[#050508] transition-all flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-4 rounded-full border border-[#A89882]/40 text-[#A89882] tracking-[0.2em] text-xs hover:bg-[#A89882] hover:text-[#050508] transition-all flex items-center justify-center gap-2"
             onClick={() => setChatOpen(true)}
           >
             <Icons.MessageCircle size={16} />
@@ -242,8 +244,9 @@ export function DashboardScreen() {
         </div>
       </div>
 
-      {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
     </div>
+      {chatOpen && createPortal(<ChatPanel onClose={() => setChatOpen(false)} />, document.body)}
+    </>
   );
 }
 
@@ -263,6 +266,19 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, busy]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onClose]);
 
   const send = async () => {
     const text = input.trim();
@@ -291,23 +307,37 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out]">
-      <div className="w-full max-w-lg h-[80vh] flex flex-col bg-[#0b0b10] border border-[#A89882]/25 rounded-[2rem] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 px-3 pb-[calc(var(--safe-bottom)+12px)] pt-[calc(var(--safe-top)+12px)] backdrop-blur-sm animate-[fadeIn_0.3s_ease-out] sm:items-center sm:p-4"
+      onMouseDown={onClose}
+      role="presentation"
+    >
+      <div
+        className="flex h-[76dvh] max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-24px)] w-full max-w-lg flex-col overflow-hidden rounded-[1.5rem] border border-[#A89882]/25 bg-[#0b0b10] shadow-[0_20px_60px_rgba(0,0,0,0.6)] sm:h-[80vh] sm:rounded-[2rem]"
+        onMouseDown={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="命理老師對話"
+      >
+        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
             <Icons.MessageCircle size={16} className="text-[#A89882]" />
             <span className="text-sm text-white tracking-widest font-light">命理老師對話</span>
           </div>
-          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
-            <Icons.X size={18} />
+          <button
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="關閉命理老師對話"
+          >
+            <Icons.X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4 custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar sm:px-5 sm:py-6">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed tracking-wide whitespace-pre-wrap ${
+                className={`max-w-[86%] px-4 py-3 rounded-2xl text-sm leading-relaxed tracking-wide whitespace-pre-wrap break-words ${
                   m.role === 'user'
                     ? 'bg-[#A89882] text-[#050508] rounded-br-sm'
                     : 'bg-white/[0.04] border border-white/10 text-slate-200 rounded-bl-sm'
@@ -327,7 +357,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
           <div ref={endRef} />
         </div>
 
-        <div className="border-t border-white/10 p-4 flex items-end gap-3">
+        <div className="shrink-0 border-t border-white/10 p-3 flex items-end gap-3 sm:p-4">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -339,7 +369,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
             }}
             rows={1}
             placeholder="輸入訊息…（Enter 送出）"
-            className="flex-1 bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 resize-none max-h-32"
+            className="min-h-12 flex-1 bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 resize-none max-h-28"
           />
           <button
             onClick={() => void send()}

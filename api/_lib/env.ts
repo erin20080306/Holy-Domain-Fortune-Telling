@@ -84,7 +84,7 @@ export function planLimitsFromEnv(): Record<PlanId, PlanLimits> {
     master_monthly: {
       shortAiPerMonth: num('PLAN_MASTER_SHORT_AI_LIMIT', 100),
       premiumReportPerMonth: num('PLAN_MASTER_PREMIUM_REPORT_LIMIT', 8),
-      premiumChatPerMonth: num('PLAN_MASTER_CHAT_LIMIT', 200),
+      premiumChatPerMonth: num('PLAN_MASTER_CHAT_LIMIT', 150),
       tarotPerDay: 99,
     },
   };

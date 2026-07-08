@@ -1,7 +1,12 @@
 import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
 import { getAuthedUser } from '../_lib/auth.js';
 import { ensureSubscription } from '../_lib/services/SubscriptionRepository.js';
-import { getOrCreateQuota, incrementUsage, usedCount } from '../_lib/services/UsageRepository.js';
+import {
+  getOrCreateQuota,
+  getUsageBucketKey,
+  incrementUsage,
+  usedCount,
+} from '../_lib/services/UsageRepository.js';
 import { planLimitsFromEnv } from '../_lib/env.js';
 import { checkEntitlement } from '../../shared/entitlement.js';
 import { USER_MESSAGES } from '../../shared/productCopy.js';
@@ -42,6 +47,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const body = raw.length ? JSON.parse(raw.toString('utf8')) : {};
   const usage = body.usage_type as UsageType;
   if (!ALLOWED.includes(usage)) return sendJson(res, 400, { ok: false });
+  const usageBucket = getUsageBucketKey(usage);
 
   // Admins have unlimited access and never require a subscription. Skip all
   // entitlement/quota enforcement for them.
@@ -51,7 +57,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (!admin) {
     try {
       const sub = await ensureSubscription(user.userId);
-      const quota = await getOrCreateQuota(user.userId, sub.plan);
+      const quota = await getOrCreateQuota(user.userId, sub.plan, usageBucket);
 
       gate = checkEntitlement({
         plan: sub.plan,
@@ -112,7 +118,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const fromCache = body.__from_cache === true;
   if (!admin && !fromCache) {
     try {
-      await incrementUsage(user.userId, usage);
+      await incrementUsage(user.userId, usage, usageBucket);
     } catch (err) {
       // Usage increment failed (e.g. RLS blocking the RPC). Don't fail the
       // request since content was already produced; just log it.
