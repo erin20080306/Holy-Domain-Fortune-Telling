@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '../supabaseAdmin.js';
+import { isMissingSupabaseSchemaError } from '../supabaseErrors.js';
 import { getTaipeiUsageMonth } from '../../../shared/usageMonth.js';
 import type { PlanId, UsageType } from '../../../shared/plans.js';
 
@@ -23,18 +24,36 @@ const COLUMN: Record<UsageType, keyof UsageQuotaRow> = {
   ziwei: 'ziwei_count',
 };
 
+function emptyQuota(userId: string, plan: PlanId, month: string): UsageQuotaRow {
+  return {
+    user_id: userId,
+    usage_month_taipei: month,
+    plan,
+    free_ai_count: 0,
+    premium_report_count: 0,
+    premium_chat_count: 0,
+    tarot_draw_count: 0,
+    bazi_count: 0,
+    ziwei_count: 0,
+  };
+}
+
 export async function getOrCreateQuota(
   userId: string,
   plan: PlanId,
   month = getTaipeiUsageMonth(),
 ): Promise<UsageQuotaRow> {
   const admin = getSupabaseAdmin();
-  const { data } = await admin
+  const { data, error: lookupError } = await admin
     .from('user_usage_quotas')
     .select('*')
     .eq('user_id', userId)
     .eq('usage_month_taipei', month)
     .maybeSingle();
+  if (lookupError) {
+    if (isMissingSupabaseSchemaError(lookupError)) return emptyQuota(userId, plan, month);
+    throw lookupError;
+  }
   if (data) return data as UsageQuotaRow;
 
   const { data: created, error } = await admin
@@ -42,7 +61,10 @@ export async function getOrCreateQuota(
     .insert({ user_id: userId, usage_month_taipei: month, plan })
     .select('*')
     .single();
-  if (error) throw error;
+  if (error) {
+    if (isMissingSupabaseSchemaError(error)) return emptyQuota(userId, plan, month);
+    throw error;
+  }
   return created as UsageQuotaRow;
 }
 
@@ -58,9 +80,10 @@ export async function incrementUsage(
   month = getTaipeiUsageMonth(),
 ): Promise<void> {
   const admin = getSupabaseAdmin();
-  await admin.rpc('increment_usage_counter', {
+  const { error } = await admin.rpc('increment_usage_counter', {
     p_user_id: userId,
     p_month: month,
     p_column: COLUMN[usage],
   });
+  if (error && !isMissingSupabaseSchemaError(error)) throw error;
 }
