@@ -30,16 +30,22 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   let gate = { allowed: true, remaining: Infinity } as ReturnType<typeof checkEntitlement>;
   if (!admin) {
-    const sub = await ensureSubscription(user.userId);
-    const quota = await getOrCreateQuota(user.userId, sub.plan);
+    try {
+      const sub = await ensureSubscription(user.userId);
+      const quota = await getOrCreateQuota(user.userId, sub.plan);
 
-    gate = checkEntitlement({
-      plan: sub.plan,
-      status: sub.status,
-      usage,
-      used: usedCount(quota, usage),
-      limits: planLimitsFromEnv(),
-    });
+      gate = checkEntitlement({
+        plan: sub.plan,
+        status: sub.status,
+        usage,
+        used: usedCount(quota, usage),
+        limits: planLimitsFromEnv(),
+      });
+    } catch {
+      // Subscription/quota lookup failed (e.g. transient DB error). Always
+      // return JSON so the client can recover instead of hanging.
+      return sendJson(res, 200, { ok: false, message: USER_MESSAGES.analysisBusy });
+    }
 
     if (!gate.allowed) {
       const message =

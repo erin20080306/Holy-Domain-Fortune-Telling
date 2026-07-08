@@ -47,19 +47,24 @@ export function DashboardScreen() {
     if (!selectedCat) return;
     setBusy(true);
     setResult('');
-    const res = await api.generate(usageType, {
-      category: selectedCat.id,
-      question: question.trim() || undefined,
-      name: NEEDS_NAME.has(selectedCat.id) ? fullName.trim() || undefined : undefined,
-      gender: gender || undefined,
-      birth_date: NEEDS_BIRTH.has(selectedCat.id) ? birthDate || undefined : undefined,
-      birth_time: NEEDS_BIRTH.has(selectedCat.id) ? birthTime || undefined : undefined,
-    });
-    setBusy(false);
-    if (res?.ok) {
-      setResult(res.content);
-    } else {
-      setResult(res?.message ?? '目前服務暫時無法使用，請稍後再試。');
+    try {
+      const res = await api.generate(usageType, {
+        category: selectedCat.id,
+        question: question.trim() || undefined,
+        name: NEEDS_NAME.has(selectedCat.id) ? fullName.trim() || undefined : undefined,
+        gender: gender || undefined,
+        birth_date: NEEDS_BIRTH.has(selectedCat.id) ? birthDate || undefined : undefined,
+        birth_time: NEEDS_BIRTH.has(selectedCat.id) ? birthTime || undefined : undefined,
+      });
+      if (res?.ok) {
+        setResult(res.content);
+      } else {
+        setResult(res?.message ?? '目前服務暫時無法使用，請稍後再試。');
+      }
+    } catch {
+      setResult('目前服務暫時無法使用，請稍後再試。');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -253,15 +258,23 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
     setMessages((m) => [...m, { role: 'user', text }]);
     setInput('');
     setBusy(true);
-    const res = await api.generate('premium_chat', { question: text, history });
-    setBusy(false);
-    setMessages((m) => [
-      ...m,
-      {
-        role: 'assistant',
-        text: res?.ok ? res.content : res?.message ?? '目前服務暫時無法使用，請稍後再試。',
-      },
-    ]);
+    try {
+      const res = await api.generate('premium_chat', { question: text, history });
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          text: res?.ok ? res.content : res?.message ?? '目前服務暫時無法使用，請稍後再試。',
+        },
+      ]);
+    } catch {
+      setMessages((m) => [
+        ...m,
+        { role: 'assistant', text: '目前服務暫時無法使用，請稍後再試。' },
+      ]);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

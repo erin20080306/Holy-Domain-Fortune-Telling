@@ -16,7 +16,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string> | undefined),
   };
   const res = await fetch(`${clientEnv.apiBaseUrl}${path}`, { ...init, headers });
-  return (await res.json()) as T;
+  // Guard against non-JSON responses (e.g. 5xx HTML error pages). Returning a
+  // structured object prevents callers from throwing and leaving UI stuck in a
+  // loading state.
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return { ok: false, message: '目前服務暫時無法使用，請稍後再試。' } as T;
+  }
 }
 
 export const api = {
