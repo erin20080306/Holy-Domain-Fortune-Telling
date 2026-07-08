@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Fails if secrets are committed or hardcoded. Run in CI + pre-commit.
 import { execSync } from 'node:child_process';
-import { readFileSync, existsSync, globSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { extname, join } from 'node:path';
 
 let failed = false;
 const fail = (msg) => {
@@ -29,14 +30,10 @@ const patterns = [
   { re: /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9/, name: 'embedded JWT service key' },
 ];
 
-const files = safeGlob([
-  'src/**/*.{ts,tsx,js,jsx}',
-  'api/**/*.{ts,js}',
-  'shared/**/*.{ts,js}',
-  'scripts/**/*.mjs',
+const files = listSourceFiles(['src', 'api', 'shared', 'scripts'])
   // The checker scripts themselves contain the detection patterns as literals,
   // so exclude them to avoid self-matching false positives.
-]).filter((f) => !/check-(secrets|client-env)\.mjs$/.test(f));
+  .filter((f) => !/check-(secrets|client-env)\.mjs$/.test(f));
 
 for (const file of files) {
   const content = readFileSync(file, 'utf8');
@@ -45,15 +42,25 @@ for (const file of files) {
   }
 }
 
-function safeGlob(globs) {
+function listSourceFiles(roots) {
+  const exts = new Set(['.js', '.jsx', '.mjs', '.ts', '.tsx']);
   const out = [];
-  for (const g of globs) {
-    try {
-      out.push(...globSync(g, { nodir: true }));
-    } catch {
-      /* older node: ignore */
+
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!['.git', 'dist', 'node_modules'].includes(entry.name)) walk(path);
+        continue;
+      }
+      if (entry.isFile() && exts.has(extname(entry.name))) {
+        out.push(path.replaceAll('\\', '/'));
+      }
     }
-  }
+  };
+
+  for (const root of roots) walk(root);
   return out;
 }
 
