@@ -10,6 +10,25 @@ import { generateReading } from '../_lib/ai/generateReading.js';
 
 const ALLOWED: UsageType[] = ['short_reading', 'premium_report', 'premium_chat', 'tarot'];
 
+// Supabase/Postgrest errors are plain objects (not Error instances), so
+// String(err) yields "[object Object]". Serialize the useful fields instead.
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>;
+    const parts = ['message', 'code', 'details', 'hint']
+      .map((k) => (e[k] ? `${k}=${e[k]}` : ''))
+      .filter(Boolean);
+    if (parts.length) return parts.join(' | ');
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return String(err);
+    }
+  }
+  return String(err);
+}
+
 // Generates fortune content. Enforcement order:
 // 1) verify auth  2) check entitlement  3) produce content  4) increment usage.
 // Usage is incremented ONLY on successful, non-cached generation. The client
@@ -45,7 +64,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       // Subscription/quota lookup failed (e.g. transient DB error, or the
       // backend is not using a real service_role key so RLS blocks inserts).
       // Always return JSON so the client can recover instead of hanging.
-      const detail = err instanceof Error ? err.message : String(err);
+      const detail = describeError(err);
       console.error('[fortune/generate] subscription/quota lookup failed', {
         userId: user.userId,
         usage,
@@ -72,7 +91,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     content = await generateReading(usage, body, user.userId);
   } catch (err) {
     // API failure -> do NOT decrement quota.
-    const detail = err instanceof Error ? err.message : String(err);
+    const detail = describeError(err);
     return sendJson(res, 200, {
       ok: false,
       message: USER_MESSAGES.analysisBusy,
@@ -100,7 +119,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       console.error('[fortune/generate] incrementUsage failed', {
         userId: user.userId,
         usage,
-        error: err instanceof Error ? err.message : String(err),
+        error: describeError(err),
       });
     }
   }
