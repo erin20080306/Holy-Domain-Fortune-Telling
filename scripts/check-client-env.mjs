@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Ensures the client (src/) never references server secrets, and that the built
 // client bundle contains no model/provider names. Run in CI + pre-commit.
-import { readFileSync, existsSync, globSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { extname, join } from 'node:path';
 
 let failed = false;
 const fail = (msg) => {
@@ -21,12 +21,10 @@ const forbiddenInSrc = [
   'PAYPAL_CLIENT_SECRET',
 ];
 
-let srcFiles = [];
-try {
-  srcFiles = globSync('src/**/*.{ts,tsx,js,jsx}', { nodir: true });
-} catch {
-  /* ignore */
-}
+const clientSourceExts = new Set(['.ts', '.tsx', '.js', '.jsx']);
+const srcFiles = existsSync('src')
+  ? walk('src').filter((file) => clientSourceExts.has(extname(file)))
+  : [];
 for (const file of srcFiles) {
   const content = readFileSync(file, 'utf8');
   for (const token of forbiddenInSrc) {
