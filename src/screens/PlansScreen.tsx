@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ArrowRight, Mail, Send } from 'lucide-react';
 import { PLAN_DISPLAY } from '@shared/plans';
 import { shouldShowPaypalLinks, type Platform } from '@shared/paypalVisibility';
 import { USER_MESSAGES } from '@shared/productCopy';
 import { clientEnv, PAYPAL_LINKS } from '../lib/env';
 import { isStandalone } from '../pwa/pwaInstallPrompt';
 import { useAuth } from '../state/AuthContext';
+import { api } from '../lib/api';
 
 function detectPlatform(): Platform {
   const cap = (window as any).Capacitor;
@@ -99,11 +101,142 @@ export function PlansScreen() {
           </div>
         ))}
       </div>
+      <div className="mt-8 max-w-5xl mx-auto border border-[#A89882]/20 rounded-3xl p-6 md:p-8 bg-white/[0.02]">
+        <p className="text-[#A89882] text-[10px] tracking-[0.3em] font-semibold mb-2 flex gap-2 items-center">
+          <span>深度命理報告內容</span>
+          <span className="opacity-70">REPORT CONTENTS</span>
+        </p>
+        <p className="text-slate-400 text-xs font-light tracking-wider mb-5">
+          每份約 3,000 字（約 2–3 頁 A4），依你選擇的命理項目與提供的資料撰寫，涵蓋以下五大面向：
+        </p>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-300 font-light tracking-wider">
+          {['整體運勢總論', '事業／學業', '感情／人際', '財運', '近期（3 個月）重點提醒與行動建議'].map(
+            (s, i) => (
+              <li key={s} className="flex items-center gap-3">
+                <span className="w-5 h-5 shrink-0 rounded-full border border-[#A89882]/40 text-[#A89882] text-[10px] flex items-center justify-center">
+                  {i + 1}
+                </span>
+                {s}
+              </li>
+            ),
+          )}
+        </ul>
+      </div>
+
       <div className="glass-card mt-8">
         <p className="muted" style={{ margin: 0 }}>
           {USER_MESSAGES.paymentPending}
         </p>
       </div>
+
+      <ContactForm />
+    </div>
+  );
+}
+
+function ContactForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'ok' | 'error'>('idle');
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    setError('');
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      return setError('請填寫姓名、Email 與訊息內容。');
+    }
+    setBusy(true);
+    try {
+      const res = await api.sendContact({ name, email, message });
+      if (res.ok) {
+        setStatus('ok');
+        setName('');
+        setEmail('');
+        setMessage('');
+      } else {
+        setStatus('error');
+        setError(res.message ?? '寄送失敗，請稍後再試。');
+      }
+    } catch {
+      setStatus('error');
+      setError('寄送失敗，請檢查網路後再試。');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const inputCls =
+    'w-full bg-transparent border-b border-white/20 px-1 py-3 text-white font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 text-sm';
+
+  return (
+    <div className="mt-8 max-w-2xl mx-auto text-center border border-white/10 rounded-3xl p-8 bg-white/[0.02]">
+      <p className="text-[#A89882] text-[10px] tracking-[0.3em] font-semibold mb-2 flex justify-center gap-2 items-center">
+        <span>需要協助</span>
+        <span className="opacity-70">NEED HELP</span>
+      </p>
+      <h3 className="text-xl text-white font-light tracking-widest mb-3 font-serif">聯絡客服</h3>
+      <p className="text-slate-400 text-sm font-light tracking-wider mb-6">
+        方案、付款或帳戶有任何問題，填寫下方表單送出，我們將盡快回覆您的信箱。
+      </p>
+
+      {status === 'ok' ? (
+        <div className="flex flex-col items-center gap-3 py-6 animate-[fadeIn_0.4s_ease-out]">
+          <Mail size={28} className="text-[#A89882]" />
+          <p className="text-white tracking-wider">訊息已送出，我們會盡快與您聯繫。</p>
+          <button
+            onClick={() => setStatus('idle')}
+            className="text-[#A89882] text-xs tracking-widest border-b border-[#A89882]/30 pb-0.5 hover:text-white transition-colors"
+          >
+            再寄一封
+          </button>
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit();
+          }}
+          className="space-y-5 text-left"
+        >
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="姓名 Name"
+            className={inputCls}
+          />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="您的 Email（方便我們回覆）"
+            className={inputCls}
+          />
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="想詢問的內容 Message"
+            rows={4}
+            className={`${inputCls} resize-none`}
+          />
+
+          {error && <p className="text-[#e0a97a] text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full py-3 rounded-full bg-[#A89882] text-black tracking-widest text-xs font-medium hover:bg-white transition-all shadow-[0_0_20px_rgba(168,152,130,0.3)] flex justify-center items-center gap-2 disabled:opacity-60"
+          >
+            {busy ? '寄送中…' : '送出訊息'}
+            <Send size={14} />
+          </button>
+          <p className="text-white/30 text-[11px] tracking-wider text-center">
+            或直接來信 erin20080306@gmail.com
+          </p>
+        </form>
+      )}
     </div>
   );
 }

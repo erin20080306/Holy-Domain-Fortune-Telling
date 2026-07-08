@@ -74,7 +74,7 @@ export function AdminDashboard() {
         {kpi(stats?.pending_paypal_match, '待人工確認付款')}
         {kpi(stats?.today_logins, '今日登入人數')}
         {kpi(stats?.total_logins, '總登入次數')}
-        {kpi(stats?.short_reading_used, 'AI 短解讀使用')}
+        {kpi(stats?.short_reading_used, '命理短解讀使用')}
         {kpi(stats?.premium_report_used, '深度報告使用')}
         {kpi(stats?.plan_counts?.free, '見習星辰')}
         {kpi(stats?.plan_counts?.pro_monthly, '星河行者')}

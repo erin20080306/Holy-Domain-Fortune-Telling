@@ -1,7 +1,7 @@
-import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { getAuthedUser } from '../_lib/auth';
-import { ensureSubscription } from '../_lib/services/SubscriptionRepository';
-import { USER_MESSAGES } from '../../shared/productCopy';
+import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
+import { getAuthedUser } from '../_lib/auth.js';
+import { ensureSubscription } from '../_lib/services/SubscriptionRepository.js';
+import { USER_MESSAGES } from '../../shared/productCopy.js';
 
 // Returns the caller's subscription. Never includes provider/model fields.
 export default async function handler(req: ApiRequest, res: ApiResponse) {

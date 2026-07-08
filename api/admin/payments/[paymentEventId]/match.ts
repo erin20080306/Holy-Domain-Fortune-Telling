@@ -1,11 +1,11 @@
-import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../../../_lib/http';
-import { getAuthedUser, isAdmin } from '../../../_lib/auth';
-import { getSupabaseAdmin } from '../../../_lib/supabaseAdmin';
-import { applySubscriptionAction } from '../../../_lib/paypal/paypalSubscriptionService';
-import { mapEventTypeToAction } from '../../../_lib/paypal/paypalPlanMapper';
-import { writeAuditLog } from '../../../_lib/services/AdminAuditService';
-import { USER_MESSAGES } from '../../../../shared/productCopy';
-import type { PlanId } from '../../../../shared/plans';
+import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../../../_lib/http.js';
+import { getAuthedUser, isAdmin } from '../../../_lib/auth.js';
+import { getSupabaseAdmin } from '../../../_lib/supabaseAdmin.js';
+import { applySubscriptionAction } from '../../../_lib/paypal/paypalSubscriptionService.js';
+import { mapEventTypeToAction } from '../../../_lib/paypal/paypalPlanMapper.js';
+import { writeAuditLog } from '../../../_lib/services/AdminAuditService.js';
+import { USER_MESSAGES } from '../../../../shared/productCopy.js';
+import type { PlanId } from '../../../../shared/plans.js';
 
 // Admin manually matches an unmatched PayPal event to a user + plan. Writes an
 // audit log. This is the only manual path to activate an unmatched payment.

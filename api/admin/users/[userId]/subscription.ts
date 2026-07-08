@@ -1,11 +1,11 @@
-import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../../../_lib/http';
-import { getAuthedUser, isAdmin } from '../../../_lib/auth';
-import { getSubscription, updateSubscription } from '../../../_lib/services/SubscriptionRepository';
-import { writeAuditLog } from '../../../_lib/services/AdminAuditService';
-import { getSupabaseAdmin } from '../../../_lib/supabaseAdmin';
-import { getTaipeiUsageMonth } from '../../../../shared/usageMonth';
-import { USER_MESSAGES } from '../../../../shared/productCopy';
-import type { PlanId, SubscriptionStatus } from '../../../../shared/plans';
+import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../../../_lib/http.js';
+import { getAuthedUser, isAdmin } from '../../../_lib/auth.js';
+import { getSubscription, updateSubscription } from '../../../_lib/services/SubscriptionRepository.js';
+import { writeAuditLog } from '../../../_lib/services/AdminAuditService.js';
+import { getSupabaseAdmin } from '../../../_lib/supabaseAdmin.js';
+import { getTaipeiUsageMonth } from '../../../../shared/usageMonth.js';
+import { USER_MESSAGES } from '../../../../shared/productCopy.js';
+import type { PlanId, SubscriptionStatus } from '../../../../shared/plans.js';
 
 const VALID_PLANS: PlanId[] = ['free', 'pro_monthly', 'master_monthly'];
 const VALID_STATUS: SubscriptionStatus[] = [

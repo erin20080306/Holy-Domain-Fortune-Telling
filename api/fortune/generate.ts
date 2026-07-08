@@ -1,11 +1,12 @@
-import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { getAuthedUser } from '../_lib/auth';
-import { ensureSubscription } from '../_lib/services/SubscriptionRepository';
-import { getOrCreateQuota, incrementUsage, usedCount } from '../_lib/services/UsageRepository';
-import { planLimitsFromEnv } from '../_lib/env';
-import { checkEntitlement } from '../../shared/entitlement';
-import { USER_MESSAGES } from '../../shared/productCopy';
-import type { UsageType } from '../../shared/plans';
+import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
+import { getAuthedUser } from '../_lib/auth.js';
+import { ensureSubscription } from '../_lib/services/SubscriptionRepository.js';
+import { getOrCreateQuota, incrementUsage, usedCount } from '../_lib/services/UsageRepository.js';
+import { planLimitsFromEnv } from '../_lib/env.js';
+import { checkEntitlement } from '../../shared/entitlement.js';
+import { USER_MESSAGES } from '../../shared/productCopy.js';
+import type { UsageType } from '../../shared/plans.js';
+import { generateReading } from '../_lib/ai/generateReading.js';
 
 const ALLOWED: UsageType[] = ['short_reading', 'premium_report', 'premium_chat', 'tarot'];
 
@@ -23,27 +24,35 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const usage = body.usage_type as UsageType;
   if (!ALLOWED.includes(usage)) return sendJson(res, 400, { ok: false });
 
-  const sub = await ensureSubscription(user.userId);
-  const quota = await getOrCreateQuota(user.userId, sub.plan);
+  // Admins have unlimited access and never require a subscription. Skip all
+  // entitlement/quota enforcement for them.
+  const admin = user.role === 'admin' || user.role === 'super_admin';
 
-  const gate = checkEntitlement({
-    plan: sub.plan,
-    status: sub.status,
-    usage,
-    used: usedCount(quota, usage),
-    limits: planLimitsFromEnv(),
-  });
+  let gate = { allowed: true, remaining: Infinity } as ReturnType<typeof checkEntitlement>;
+  if (!admin) {
+    const sub = await ensureSubscription(user.userId);
+    const quota = await getOrCreateQuota(user.userId, sub.plan);
 
-  if (!gate.allowed) {
-    const message = gate.reason === 'plan_required' ? USER_MESSAGES.planRequired : USER_MESSAGES.quotaExhausted;
-    return sendJson(res, 403, { ok: false, message, remaining: 0 });
+    gate = checkEntitlement({
+      plan: sub.plan,
+      status: sub.status,
+      usage,
+      used: usedCount(quota, usage),
+      limits: planLimitsFromEnv(),
+    });
+
+    if (!gate.allowed) {
+      const message =
+        gate.reason === 'plan_required' ? USER_MESSAGES.planRequired : USER_MESSAGES.quotaExhausted;
+      return sendJson(res, 403, { ok: false, message, remaining: 0 });
+    }
   }
 
-  // --- Content production (placeholder). Real AI provider is server-only and
-  // selected via env; its name is NEVER returned to the client. ---
+  // --- Content production. The provider is server-only and selected via env;
+  // its name is NEVER returned to the client. ---
   let content: string | null = null;
   try {
-    content = await produceContent(usage, body);
+    content = await generateReading(usage, body, user.userId);
   } catch {
     // API failure -> do NOT decrement quota.
     return sendJson(res, 200, { ok: false, message: USER_MESSAGES.analysisBusy });
@@ -54,8 +63,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   // Only now, after successful non-cached generation, do we consume quota.
+  // Admins are unlimited, so their usage is never counted.
   const fromCache = body.__from_cache === true;
-  if (!fromCache) {
+  if (!admin && !fromCache) {
     await incrementUsage(user.userId, usage);
   }
 
@@ -64,13 +74,4 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     content,
     remaining: Math.max(0, gate.remaining === Infinity ? 999 : gate.remaining - (fromCache ? 0 : 1)),
   });
-}
-
-// Placeholder generator. Returns null when no provider configured so the caller
-// surfaces a friendly "busy" message and does not consume quota.
-async function produceContent(usage: UsageType, _body: any): Promise<string | null> {
-  const hasProvider = !!process.env.ANTHROPIC_API_KEY || !!process.env.GEMINI_API_KEY;
-  if (!hasProvider) return null;
-  // Real provider dispatch would live here (server-only). Kept abstract on purpose.
-  return `（${usage} 內容產生器待接上內部服務）`;
 }

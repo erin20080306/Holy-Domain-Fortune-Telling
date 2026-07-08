@@ -1,8 +1,8 @@
-import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { getAuthedUser, isAdmin } from '../_lib/auth';
-import { getSupabaseAdmin } from '../_lib/supabaseAdmin';
-import { getTaipeiUsageMonth } from '../../shared/usageMonth';
-import { USER_MESSAGES } from '../../shared/productCopy';
+import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
+import { getAuthedUser, isAdmin } from '../_lib/auth.js';
+import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
+import { getTaipeiUsageMonth } from '../../shared/usageMonth.js';
+import { USER_MESSAGES } from '../../shared/productCopy.js';
 
 // Paginated admin user list with search/filter. Admin-only (role checked here,
 // never on the frontend). Joins profile + subscription + current-month usage.

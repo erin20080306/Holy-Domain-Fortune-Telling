@@ -1,9 +1,9 @@
-import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { getAuthedUser } from '../_lib/auth';
-import { mapCheckoutPlan } from '../_lib/paypal/paypalPlanMapper';
-import { createPendingCheckout } from '../_lib/paypal/paypalPendingCheckoutService';
-import { serverEnv } from '../_lib/env';
-import { USER_MESSAGES } from '../../shared/productCopy';
+import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
+import { getAuthedUser } from '../_lib/auth.js';
+import { mapCheckoutPlan } from '../_lib/paypal/paypalPlanMapper.js';
+import { createPendingCheckout } from '../_lib/paypal/paypalPendingCheckoutService.js';
+import { serverEnv } from '../_lib/env.js';
+import { USER_MESSAGES } from '../../shared/productCopy.js';
 
 // Creates a pending checkout and returns ONLY the checkout_url. The client
 // never receives secrets. Clicking PayPal does NOT activate the plan.

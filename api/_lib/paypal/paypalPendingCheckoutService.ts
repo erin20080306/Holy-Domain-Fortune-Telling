@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { getSupabaseAdmin } from '../supabaseAdmin';
-import { getPaypalConfig } from './paypalConfig';
-import type { PlanId } from '../../../shared/plans';
+import { getSupabaseAdmin } from '../supabaseAdmin.js';
+import { getPaypalConfig } from './paypalConfig.js';
+import type { PlanId } from '../../../shared/plans.js';
 
 export interface PendingCheckout {
   checkoutToken: string;

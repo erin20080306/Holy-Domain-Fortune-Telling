@@ -1,5 +1,5 @@
-import { getSupabaseAdmin } from '../supabaseAdmin';
-import type { PlanId, SubscriptionSource, SubscriptionStatus } from '../../../shared/plans';
+import { getSupabaseAdmin } from '../supabaseAdmin.js';
+import type { PlanId, SubscriptionSource, SubscriptionStatus } from '../../../shared/plans.js';
 
 export interface SubscriptionRow {
   id: string;

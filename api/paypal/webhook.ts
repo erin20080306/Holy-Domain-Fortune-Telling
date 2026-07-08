@@ -1,7 +1,7 @@
-import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { getHeader } from '../_lib/http';
-import { verifyWebhookSignature } from '../_lib/paypal/paypalSignatureVerifier';
-import { handleWebhookEvent } from '../_lib/paypal/paypalWebhookHandler';
+import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
+import { getHeader } from '../_lib/http.js';
+import { verifyWebhookSignature } from '../_lib/paypal/paypalSignatureVerifier.js';
+import { handleWebhookEvent } from '../_lib/paypal/paypalWebhookHandler.js';
 
 // Vercel: disable automatic body parsing so we can verify the raw signature.
 export const config = { api: { bodyParser: false } };

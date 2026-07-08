@@ -1,7 +1,7 @@
-import { getSupabaseAdmin } from '../supabaseAdmin';
-import { mapEventTypeToAction } from './paypalPlanMapper';
-import { applySubscriptionAction } from './paypalSubscriptionService';
-import type { PlanId } from '../../../shared/plans';
+import { getSupabaseAdmin } from '../supabaseAdmin.js';
+import { mapEventTypeToAction } from './paypalPlanMapper.js';
+import { applySubscriptionAction } from './paypalSubscriptionService.js';
+import type { PlanId } from '../../../shared/plans.js';
 
 interface WebhookResult {
   status: 'processed' | 'pending_match' | 'ignored' | 'duplicate' | 'failed';

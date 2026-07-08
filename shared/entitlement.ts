@@ -4,7 +4,7 @@ import {
   type PlanLimits,
   type SubscriptionStatus,
   type UsageType,
-} from './plans';
+} from './plans.js';
 
 export interface UsageCounts {
   short_reading: number;

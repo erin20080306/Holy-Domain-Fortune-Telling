@@ -1,6 +1,6 @@
-import { updateSubscription, ensureSubscription } from '../services/SubscriptionRepository';
-import type { PlanId } from '../../../shared/plans';
-import type { SubscriptionAction } from './paypalPlanMapper';
+import { updateSubscription, ensureSubscription } from '../services/SubscriptionRepository.js';
+import type { PlanId } from '../../../shared/plans.js';
+import type { SubscriptionAction } from './paypalPlanMapper.js';
 
 // Applies a webhook-derived action to a user's subscription. This is the ONLY
 // place a PayPal event mutates a plan, and only after signature verification.

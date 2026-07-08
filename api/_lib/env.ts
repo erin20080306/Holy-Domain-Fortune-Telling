@@ -1,5 +1,5 @@
 // Server-only env access. NEVER import this from client (src/) code.
-import type { PlanId, PlanLimits } from '../../shared/plans';
+import type { PlanId, PlanLimits } from '../../shared/plans.js';
 
 function num(key: string, fallback: number): number {
   const v = process.env[key];
@@ -25,6 +25,21 @@ export const serverEnv = {
   adminDebugProviderVisible: bool('ADMIN_DEBUG_AI_PROVIDER_VISIBLE', false),
 
   timezone: process.env.FORTUNE_TIMEZONE ?? 'Asia/Taipei',
+
+  contact: {
+    resendApiKey: process.env.RESEND_API_KEY ?? '',
+    toEmail: process.env.CONTACT_TO_EMAIL ?? 'erin20080306@gmail.com',
+    fromEmail: process.env.RESEND_FROM_EMAIL ?? 'MYSTIC 客服 <onboarding@resend.dev>',
+  },
+
+  ai: {
+    anthropicKey: process.env.ANTHROPIC_API_KEY ?? '',
+    // Premium tier model (deep reports / chat). Override via env.
+    claudeModel: process.env.CLAUDE_MODEL_PREMIUM || 'claude-sonnet-5',
+    geminiKey: process.env.GEMINI_API_KEY ?? '',
+    // Free tier model (short readings / tarot). Override via env.
+    geminiModel: process.env.GEMINI_MODEL_FREE || 'gemini-3.1-flash-lite',
+  },
 
   paypal: {
     clientId: process.env.PAYPAL_CLIENT_ID ?? '',

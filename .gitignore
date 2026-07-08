@@ -30,3 +30,6 @@ ios/App/App.xcuserdata
 ios/App/Pods
 android/.gradle
 android/app/build
+
+.vercel
+.env*

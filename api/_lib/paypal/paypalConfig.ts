@@ -1,5 +1,5 @@
-import { serverEnv } from '../env';
-import type { PlanId } from '../../../shared/plans';
+import { serverEnv } from '../env.js';
+import type { PlanId } from '../../../shared/plans.js';
 
 export interface PaypalPlanConfig {
   planId: PlanId;

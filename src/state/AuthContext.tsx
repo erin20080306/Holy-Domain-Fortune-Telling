@@ -78,7 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return error ? { error: '登入資訊有誤，請重新確認。' } : {};
+    if (!error) return {};
+    const msg = error.message?.toLowerCase() ?? '';
+    if (msg.includes('email not confirmed'))
+      return { error: '此帳戶尚未完成信箱驗證，請先至信箱點擊驗證連結。' };
+    if (msg.includes('invalid login credentials'))
+      return { error: 'Email 或密碼有誤，請重新確認。' };
+    return { error: '登入失敗，請稍後再試。' };
   }, []);
 
   const signUp = useCallback(
@@ -88,7 +94,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password: params.password,
         options: { data: { name: params.name, phone: params.phone } },
       });
-      return error ? { error: '註冊未成功，請確認資料或稍後再試。' } : {};
+      if (!error) return {};
+      const msg = error.message?.toLowerCase() ?? '';
+      const code = (error as { code?: string }).code ?? '';
+      if (
+        error.status === 429 ||
+        code.includes('rate_limit') ||
+        msg.includes('rate limit')
+      )
+        return { error: '目前註冊人數過多（寄信額度已滿），請稍後再試。' };
+      if (msg.includes('already registered') || msg.includes('already been registered'))
+        return { error: '此 Email 已註冊過，請直接登入。' };
+      if (msg.includes('password'))
+        return { error: '密碼強度不足，請使用至少 8 碼並包含英數字。' };
+      if (msg.includes('invalid') && msg.includes('email'))
+        return { error: 'Email 格式不正確，請重新確認。' };
+      return { error: '註冊未成功，請確認資料或稍後再試。' };
     },
     [],
   );

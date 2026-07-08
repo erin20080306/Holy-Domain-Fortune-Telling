@@ -51,7 +51,7 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   master_monthly: {
     shortAiPerMonth: 100,
     premiumReportPerMonth: 8,
-    premiumChatPerMonth: 200,
+    premiumChatPerMonth: 150,
     tarotPerDay: 99,
   },
 };
@@ -74,9 +74,9 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     features: [
       '每日塔羅 1 次',
       '星座 / 生肖 / 生命靈數',
-      '每月 3 次 AI 短解讀',
+      '每月 3 次命理短解讀',
       '基礎命理功能',
-      '不含 2,000 字深度命理報告',
+      '不含 3,000 字（約 2–3 頁 A4）深度命理報告',
     ],
     buttonText: '開始免費使用',
   },
@@ -85,8 +85,8 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     title: '星河行者',
     price: 'NT$99 / 月',
     features: [
-      '每月 2 份 2,000 字深度命理報告',
-      '每月 30 次 AI 短解讀',
+      '每月 2 份 3,000 字（約 2–3 頁 A4）深度命理報告',
+      '每月 30 次命理短解讀',
       '每月 30 則進階命理老師對話',
       '無廣告',
       '可保存歷史報告',
@@ -99,9 +99,9 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     title: '宇宙共鳴',
     price: 'NT$299 / 月',
     features: [
-      '每月 8 份 2,000 字深度命理報告',
-      '每月 100 次 AI 短解讀',
-      '每月 200 則進階命理老師對話',
+      '每月 8 份 3,000 字（約 2–3 頁 A4）深度命理報告',
+      '每月 100 次命理短解讀',
+      '每月 150 則進階命理老師對話',
       '優先客服',
       '無廣告',
       '可保存歷史報告',

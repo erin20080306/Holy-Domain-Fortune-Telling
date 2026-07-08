@@ -1,9 +1,9 @@
-import { readRawBody, sendJson, getHeader, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { getAuthedUser } from '../_lib/auth';
-import { getSupabaseAdmin } from '../_lib/supabaseAdmin';
-import { ensureSubscription } from '../_lib/services/SubscriptionRepository';
-import { getOrCreateQuota } from '../_lib/services/UsageRepository';
-import { USER_MESSAGES } from '../../shared/productCopy';
+import { readRawBody, sendJson, getHeader, type ApiRequest, type ApiResponse } from '../_lib/http.js';
+import { getAuthedUser } from '../_lib/auth.js';
+import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
+import { ensureSubscription } from '../_lib/services/SubscriptionRepository.js';
+import { getOrCreateQuota } from '../_lib/services/UsageRepository.js';
+import { USER_MESSAGES } from '../../shared/productCopy.js';
 
 // Called right after login/registration. Ensures profile + subscription + this
 // month's quota row exist, and records the login (count, time, ip, user agent).

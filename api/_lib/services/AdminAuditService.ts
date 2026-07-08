@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from '../supabaseAdmin';
+import { getSupabaseAdmin } from '../supabaseAdmin.js';
 
 // Every admin mutation must be recorded here for accountability.
 export async function writeAuditLog(params: {

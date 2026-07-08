@@ -1,7 +1,7 @@
-import { sendJson, type ApiRequest, type ApiResponse } from '../../_lib/http';
-import { getAuthedUser, isAdmin } from '../../_lib/auth';
-import { getSupabaseAdmin } from '../../_lib/supabaseAdmin';
-import { USER_MESSAGES } from '../../../shared/productCopy';
+import { sendJson, type ApiRequest, type ApiResponse } from '../../_lib/http.js';
+import { getAuthedUser, isAdmin } from '../../_lib/auth.js';
+import { getSupabaseAdmin } from '../../_lib/supabaseAdmin.js';
+import { USER_MESSAGES } from '../../../shared/productCopy.js';
 
 // Lists PayPal events awaiting manual reconciliation (could not auto-match user).
 export default async function handler(req: ApiRequest, res: ApiResponse) {

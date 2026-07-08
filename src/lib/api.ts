@@ -31,6 +31,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ usage_type: usageType, ...payload }),
     }),
+  sendContact: (body: { name: string; email: string; message: string }) =>
+    request<{ ok: boolean; message?: string }>('/api/contact/send', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   admin: {
     stats: () => request<any>('/api/admin/stats'),
     users: (params: Record<string, string>) =>

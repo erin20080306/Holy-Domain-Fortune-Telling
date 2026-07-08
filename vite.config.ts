@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: null,
       manifest: false, // we ship a hand-written public/manifest.webmanifest
       workbox: {
@@ -17,6 +17,11 @@ export default defineConfig({
         // Large decorative art (引路人) is served via the runtime image cache
         // below instead of being precached in the app shell.
         globIgnores: ['**/guide.png'],
+        // Always take control of the page and purge stale precaches so a new
+        // deployment applies immediately without a manual update prompt.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [
           /^\/api\//,
@@ -33,8 +38,11 @@ export default defineConfig({
             handler: 'NetworkOnly',
           },
           {
+            // Serve images from cache for speed but revalidate in the
+            // background, so an updated asset (e.g. guide art) refreshes
+            // itself instead of being stuck on a stale/broken copy.
             urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'CacheFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'mystic-images',
               expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 },

@@ -1,9 +1,9 @@
-import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
-import { getAuthedUser, isAdmin, isSuperAdmin } from '../_lib/auth';
-import { getSupabaseAdmin } from '../_lib/supabaseAdmin';
-import { serverEnv } from '../_lib/env';
-import { getTaipeiDayKey, getTaipeiUsageMonth } from '../../shared/usageMonth';
-import { USER_MESSAGES } from '../../shared/productCopy';
+import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
+import { getAuthedUser, isAdmin, isSuperAdmin } from '../_lib/auth.js';
+import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
+import { serverEnv } from '../_lib/env.js';
+import { getTaipeiDayKey, getTaipeiUsageMonth } from '../../shared/usageMonth.js';
+import { USER_MESSAGES } from '../../shared/productCopy.js';
 
 // Dashboard KPIs. Provider/model names are NEVER included unless
 // ADMIN_DEBUG_AI_PROVIDER_VISIBLE=true AND caller is super_admin.

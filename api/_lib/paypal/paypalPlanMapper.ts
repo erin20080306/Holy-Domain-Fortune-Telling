@@ -1,4 +1,4 @@
-import type { PlanId } from '../../../shared/plans';
+import type { PlanId } from '../../../shared/plans.js';
 
 // Maps a public checkout plan key to the internal PlanId. Only known plans map.
 export function mapCheckoutPlan(input: string | undefined): PlanId | null {

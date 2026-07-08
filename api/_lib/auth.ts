@@ -1,7 +1,7 @@
-import { getSupabaseAdmin } from './supabaseAdmin';
-import { serverEnv } from './env';
-import { getHeader, type ApiRequest } from './http';
-import type { UserRole } from './types';
+import { getSupabaseAdmin } from './supabaseAdmin.js';
+import { serverEnv } from './env.js';
+import { getHeader, type ApiRequest } from './http.js';
+import type { UserRole } from './types.js';
 
 export interface AuthedUser {
   userId: string;

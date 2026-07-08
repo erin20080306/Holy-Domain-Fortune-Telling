@@ -2,11 +2,11 @@
 // Model / provider / token / API technical names are strictly forbidden here.
 
 export const PRODUCT_NAMES = {
-  shortReading: 'AI 短解讀',
+  shortReading: '命理短解讀',
   dailyGuidance: '今日指引',
   premiumAnalysis: '司夜深度分析',
-  premiumReport: '2,000 字完整命理報告',
-  premiumChat: 'AI 命理老師',
+  premiumReport: '3,000 字完整命理報告',
+  premiumChat: '命理老師',
   premiumChatAlt: '司夜進階對話',
   bazi: '八字排盤服務',
   ziwei: '紫微命盤',

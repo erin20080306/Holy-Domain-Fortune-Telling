@@ -5,7 +5,6 @@ import { useAuth } from '../state/AuthContext';
 import { setAdminSession } from '../lib/adminSession';
 
 const ADMIN_EMAIL = 'erin20080306@gmail.com';
-const ADMIN_PASSWORD = 'superadmin';
 
 export function AuthScreen() {
   const [params] = useSearchParams();
@@ -34,13 +33,10 @@ export function AuthScreen() {
     }
     setBusy(true);
 
-    // Admin login check
-    if (mode === 'login' && email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      setAdminSession();
-      setBusy(false);
-      nav('/admin');
-      return;
-    }
+    // Admin login: authenticate with a real Supabase session so the backend
+    // recognises the account (auto-promoted to super_admin via ADMIN_EMAILS)
+    // and admin APIs are authorised. Then route to the admin console.
+    const isAdminLogin = mode === 'login' && email.toLowerCase() === ADMIN_EMAIL;
 
     const res =
       mode === 'login'
@@ -48,6 +44,12 @@ export function AuthScreen() {
         : await signUp({ name, email, phone, password });
     setBusy(false);
     if (res.error) return setError(res.error);
+
+    if (isAdminLogin) {
+      setAdminSession();
+      nav('/admin');
+      return;
+    }
     nav('/app');
   };
 

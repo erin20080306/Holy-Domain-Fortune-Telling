@@ -1,5 +1,5 @@
-import { getPaypalConfig } from './paypalConfig';
-import { getHeader, type ApiRequest } from '../http';
+import { getPaypalConfig } from './paypalConfig.js';
+import { getHeader, type ApiRequest } from '../http.js';
 
 let tokenCache: { token: string; expiresAt: number } | null = null;
 

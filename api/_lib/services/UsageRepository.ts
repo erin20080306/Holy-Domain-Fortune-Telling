@@ -1,6 +1,6 @@
-import { getSupabaseAdmin } from '../supabaseAdmin';
-import { getTaipeiUsageMonth } from '../../../shared/usageMonth';
-import type { PlanId, UsageType } from '../../../shared/plans';
+import { getSupabaseAdmin } from '../supabaseAdmin.js';
+import { getTaipeiUsageMonth } from '../../../shared/usageMonth.js';
+import type { PlanId, UsageType } from '../../../shared/plans.js';
 
 export interface UsageQuotaRow {
   user_id: string;
