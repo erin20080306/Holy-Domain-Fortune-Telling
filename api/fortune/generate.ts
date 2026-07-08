@@ -41,10 +41,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         used: usedCount(quota, usage),
         limits: planLimitsFromEnv(),
       });
-    } catch {
+    } catch (err) {
       // Subscription/quota lookup failed (e.g. transient DB error). Always
       // return JSON so the client can recover instead of hanging.
-      return sendJson(res, 200, { ok: false, message: USER_MESSAGES.analysisBusy });
+      console.error('[fortune/generate] subscription/quota lookup failed', {
+        userId: user.userId,
+        usage,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return sendJson(res, 200, {
+        ok: false,
+        message: USER_MESSAGES.analysisBusy,
+        debug: 'quota_lookup_failed',
+      });
     }
 
     if (!gate.allowed) {
