@@ -91,7 +91,7 @@ function Shell() {
           path="/app"
           element={
             <RequireAuth>
-              <SplitLayout showLogout>
+              <SplitLayout showLogout compactGuide>
                 <DashboardScreen />
               </SplitLayout>
             </RequireAuth>

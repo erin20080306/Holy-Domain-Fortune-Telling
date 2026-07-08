@@ -9,13 +9,19 @@ export function SplitLayout({
   children,
   showLogout = false,
   showBack = true,
+  compactGuide = false,
 }: {
   children: ReactNode;
   showLogout?: boolean;
   showBack?: boolean;
+  compactGuide?: boolean;
 }) {
   const nav = useNavigate();
   const { signOut } = useAuth();
+  const guideSize = compactGuide
+    ? 'h-[27dvh] min-h-[168px] max-h-[240px]'
+    : 'h-[32dvh] min-h-[200px] max-h-[320px]';
+  const guideImageSize = compactGuide ? 'h-[82%] max-h-[220px]' : 'h-[86%]';
 
   const logout = async () => {
     clearAdminSession();
@@ -53,7 +59,7 @@ export function SplitLayout({
       </header>
 
       {/* 右半部 / 手機上半部：引路人展示區 */}
-      <div className="w-full h-[34dvh] min-h-[230px] md:h-full md:w-[45%] lg:w-[50%] relative flex items-end justify-center pointer-events-none z-10 md:order-2 shrink-0 bg-gradient-to-b from-transparent to-[#050508]/50 md:bg-none">
+      <div className={`w-full ${guideSize} md:h-full md:max-h-none md:w-[45%] lg:w-[50%] relative flex items-end justify-center pointer-events-none z-10 md:order-2 shrink-0 bg-gradient-to-b from-transparent to-[#050508]/50 md:bg-none`}>
         <div className="absolute bottom-6 md:bottom-10 w-[64%] h-[52%] bg-amber-500/20 blur-[70px] md:blur-[80px] rounded-full animate-[pulse-gold_4s_ease-in-out_infinite] z-0"></div>
         <img
           src="/guide.png"
@@ -62,13 +68,13 @@ export function SplitLayout({
             const img = e.currentTarget;
             if (!img.src.endsWith('/guide.svg')) img.src = '/guide.svg';
           }}
-          className="w-full h-[86%] md:h-[85%] object-contain object-bottom animate-[floatY_5s_ease-in-out_infinite] relative z-10 drop-shadow-2xl"
+          className={`w-full ${guideImageSize} md:h-[85%] md:max-h-none object-contain object-bottom animate-[floatY_5s_ease-in-out_infinite] relative z-10 drop-shadow-2xl`}
         />
         <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#050508] to-transparent md:hidden z-20"></div>
       </div>
 
       {/* 左半部 / 手機下半部：內容功能區 */}
-      <div className="w-full h-[66dvh] md:h-full md:w-[55%] lg:w-[50%] overflow-y-auto z-20 md:order-1 relative custom-scrollbar">
+      <div className="w-full flex-1 min-h-0 md:h-full md:w-[55%] lg:w-[50%] overflow-y-auto z-20 md:order-1 relative custom-scrollbar">
         {showBack && (
           <button
             onClick={() => nav(-1)}

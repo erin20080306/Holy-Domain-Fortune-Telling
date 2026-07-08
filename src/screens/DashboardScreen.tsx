@@ -269,13 +269,16 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [onClose]);
@@ -308,32 +311,36 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 px-3 pb-[calc(var(--safe-bottom)+12px)] pt-[calc(var(--safe-top)+12px)] backdrop-blur-sm animate-[fadeIn_0.3s_ease-out] sm:items-center sm:p-4"
-      onMouseDown={onClose}
+      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/80 px-0 pb-0 pt-[calc(var(--safe-top)+10px)] backdrop-blur-sm animate-[fadeIn_0.3s_ease-out] sm:items-center sm:p-4"
+      onClick={onClose}
       role="presentation"
     >
       <div
-        className="flex h-[76dvh] max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-24px)] w-full max-w-lg flex-col overflow-hidden rounded-[1.5rem] border border-[#A89882]/25 bg-[#0b0b10] shadow-[0_20px_60px_rgba(0,0,0,0.6)] sm:h-[80vh] sm:rounded-[2rem]"
-        onMouseDown={(event) => event.stopPropagation()}
+        className="flex h-[min(68dvh,620px)] max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-20px)] w-full max-w-lg flex-col overflow-hidden rounded-t-[1.5rem] border-x border-t border-[#A89882]/30 bg-[#0b0b10] shadow-[0_-20px_60px_rgba(0,0,0,0.68)] sm:h-[min(80vh,720px)] sm:rounded-[2rem] sm:border"
+        onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label="命理老師對話"
       >
-        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 sm:px-6 sm:py-4">
-          <div className="flex items-center gap-2">
-            <Icons.MessageCircle size={16} className="text-[#A89882]" />
-            <span className="text-sm text-white tracking-widest font-light">命理老師對話</span>
+        <div className="shrink-0 border-b border-white/10 bg-[#0b0b10]/95 px-4 pb-3 pt-2 sm:px-6 sm:py-4">
+          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-white/15 sm:hidden"></div>
+          <div className="flex min-h-11 items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Icons.MessageCircle size={16} className="text-[#A89882]" />
+              <span className="text-sm text-white tracking-widest font-light">命理老師對話</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-white/15 px-3 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="關閉命理老師對話"
+            >
+              <Icons.X size={18} />
+              <span className="text-xs tracking-widest">關閉</span>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-            aria-label="關閉命理老師對話"
-          >
-            <Icons.X size={20} />
-          </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar sm:px-5 sm:py-6">
+        <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar sm:px-5 sm:py-6">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
@@ -357,7 +364,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
           <div ref={endRef} />
         </div>
 
-        <div className="shrink-0 border-t border-white/10 p-3 flex items-end gap-3 sm:p-4">
+        <div className="shrink-0 border-t border-white/10 p-3 pb-[calc(var(--safe-bottom)+12px)] flex items-end gap-3 sm:p-4">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
