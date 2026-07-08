@@ -55,8 +55,12 @@ export function SplitLayout({
         <div className="absolute bottom-10 w-[70%] h-[60%] bg-amber-500/20 blur-[80px] rounded-full animate-[pulse-gold_4s_ease-in-out_infinite] z-0"></div>
         <img
           src="/guide.png"
-          alt=""
-          className="w-full h-[90%] md:h-[85%] object-contain object-bottom animate-[floatY_5s_ease-in-out_infinite] relative z-10 drop-shadow-2xl text-transparent"
+          alt="引路人"
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (!img.src.endsWith('/guide.svg')) img.src = '/guide.svg';
+          }}
+          className="w-full h-[90%] md:h-[85%] object-contain object-bottom animate-[floatY_5s_ease-in-out_infinite] relative z-10 drop-shadow-2xl"
         />
         <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#050508] to-transparent md:hidden z-20"></div>
       </div>

@@ -1,0 +1,64 @@
+<svg viewBox="0 0 420 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="引路人">
+  <defs>
+    <linearGradient id="robe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2732"/>
+      <stop offset="1" stop-color="#0c0b10"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7d6ac"/>
+      <stop offset="0.5" stop-color="#cbb994"/>
+      <stop offset="1" stop-color="#8f7f68"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="35%" r="55%">
+      <stop offset="0" stop-color="#cbb994" stop-opacity="0.55"/>
+      <stop offset="0.6" stop-color="#a89882" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#a89882" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0e2d0"/>
+      <stop offset="1" stop-color="#d9c3ab"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a63b34"/>
+      <stop offset="1" stop-color="#6f231f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- glow halo -->
+  <ellipse cx="210" cy="250" rx="190" ry="230" fill="url(#halo)"/>
+
+  <!-- shoulders / robe -->
+  <path d="M110 640 C110 470 130 400 210 388 C290 400 310 470 310 640 Z" fill="url(#robe)"/>
+  <path d="M210 388 C168 396 150 440 146 640 L160 640 C164 460 182 410 210 402 C238 410 256 460 260 640 L274 640 C270 440 252 396 210 388 Z" fill="url(#gold)" opacity="0.35"/>
+
+  <!-- collar / open shirt -->
+  <path d="M186 392 L210 470 L234 392 C226 402 194 402 186 392 Z" fill="#efe8dc" opacity="0.9"/>
+
+  <!-- neck -->
+  <rect x="197" y="330" width="26" height="46" rx="12" fill="url(#skin)"/>
+
+  <!-- head -->
+  <ellipse cx="210" cy="292" rx="52" ry="60" fill="url(#skin)"/>
+
+  <!-- hair -->
+  <path d="M158 296 C150 232 186 196 210 196 C236 196 274 232 262 300 C256 262 244 246 232 250 C240 236 224 224 210 232 C214 220 198 216 190 232 C182 224 168 244 172 276 C166 268 160 276 158 296 Z" fill="url(#hair)"/>
+
+  <!-- compass / luopan in hand -->
+  <g transform="translate(78 372) rotate(-10)">
+    <rect x="-6" y="-6" width="104" height="104" rx="10" fill="#3a2a16" stroke="url(#gold)" stroke-width="3"/>
+    <circle cx="46" cy="46" r="44" fill="none" stroke="url(#gold)" stroke-width="2"/>
+    <circle cx="46" cy="46" r="34" fill="none" stroke="url(#gold)" stroke-width="1.2" opacity="0.7"/>
+    <circle cx="46" cy="46" r="22" fill="none" stroke="url(#gold)" stroke-width="1.2" opacity="0.5"/>
+    <circle cx="46" cy="46" r="4" fill="url(#gold)"/>
+    <path d="M46 14 L52 46 L46 78 L40 46 Z" fill="url(#gold)"/>
+    <g stroke="url(#gold)" stroke-width="1" opacity="0.6">
+      <line x1="46" y1="4" x2="46" y2="14"/>
+      <line x1="46" y1="78" x2="46" y2="88"/>
+      <line x1="4" y1="46" x2="14" y2="46"/>
+      <line x1="78" y1="46" x2="88" y2="46"/>
+    </g>
+  </g>
+
+  <!-- forearm holding compass -->
+  <path d="M120 470 C110 430 128 402 168 404 L186 430 C150 434 140 452 150 486 Z" fill="url(#skin)"/>
+</svg>
