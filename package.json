@@ -1,0 +1,49 @@
+{
+  "name": "mystic-fortune",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "MYSTIC 命理探索 - 塔羅、八字、紫微、星座與 AI 命理老師",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:client-env": "node scripts/check-client-env.mjs",
+    "precommit:verify": "npm run lint && npm run typecheck && npm run test && npm run check:secrets && npm run check:client-env",
+    "generate:pwa-assets": "node scripts/generate-pwa-assets.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "lucide-react": "^0.454.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.1",
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.12",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8",
+    "vite-plugin-pwa": "^0.20.5",
+    "vitest": "^2.1.2",
+    "workbox-window": "^7.1.0"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

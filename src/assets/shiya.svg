@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="800" viewBox="0 0 640 800" role="img" aria-label="AI 命理引路人司夜 Shiya">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#2a2338"/>
+      <stop offset="60%" stop-color="#120f1a"/>
+      <stop offset="100%" stop-color="#050508"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#cbb994"/>
+      <stop offset="100%" stop-color="#8f7f68"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="800" fill="url(#glow)"/>
+  <g fill="none" stroke="url(#gold)" stroke-width="2" opacity="0.85">
+    <circle cx="320" cy="300" r="150"/>
+    <circle cx="320" cy="300" r="110" opacity="0.6"/>
+    <circle cx="320" cy="300" r="70" opacity="0.4"/>
+  </g>
+  <g fill="url(#gold)">
+    <circle cx="320" cy="150" r="6"/>
+    <circle cx="470" cy="300" r="5"/>
+    <circle cx="170" cy="300" r="5"/>
+    <circle cx="320" cy="450" r="6"/>
+    <circle cx="415" cy="405" r="4"/>
+    <circle cx="225" cy="405" r="4"/>
+    <circle cx="415" cy="195" r="4"/>
+    <circle cx="225" cy="195" r="4"/>
+  </g>
+  <text x="320" y="640" text-anchor="middle" fill="url(#gold)" font-family="serif" font-size="120" font-weight="700" letter-spacing="6">司夜</text>
+  <text x="320" y="700" text-anchor="middle" fill="#b7b0a3" font-family="sans-serif" font-size="26" letter-spacing="8">SHIYA</text>
+</svg>

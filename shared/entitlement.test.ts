@@ -1,0 +1,45 @@
+import { describe, it, expect } from 'vitest';
+import { checkEntitlement, effectivePlan } from './entitlement';
+
+describe('effectivePlan', () => {
+  it('downgrades non-active paid plans to free', () => {
+    expect(effectivePlan('pro_monthly', 'pending')).toBe('free');
+    expect(effectivePlan('pro_monthly', 'cancelled')).toBe('free');
+    expect(effectivePlan('master_monthly', 'active')).toBe('master_monthly');
+    expect(effectivePlan('pro_monthly', 'manual_active')).toBe('pro_monthly');
+  });
+});
+
+describe('checkEntitlement - premium reports', () => {
+  it('free users cannot generate premium reports', () => {
+    const r = checkEntitlement({ plan: 'free', status: 'none', usage: 'premium_report', used: 0 });
+    expect(r.allowed).toBe(false);
+    expect(r.reason).toBe('plan_required');
+  });
+
+  it('pro users get exactly 2 premium reports per month', () => {
+    const ok = checkEntitlement({ plan: 'pro_monthly', status: 'active', usage: 'premium_report', used: 1 });
+    expect(ok.allowed).toBe(true);
+    const blocked = checkEntitlement({ plan: 'pro_monthly', status: 'active', usage: 'premium_report', used: 2 });
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.reason).toBe('quota_exhausted');
+  });
+
+  it('master users get exactly 8 premium reports per month', () => {
+    expect(
+      checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'premium_report', used: 7 }).allowed,
+    ).toBe(true);
+    expect(
+      checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'premium_report', used: 8 }).allowed,
+    ).toBe(false);
+  });
+});
+
+describe('checkEntitlement - short readings', () => {
+  it('free = 3 / pro = 30 / master = 100 per month', () => {
+    expect(checkEntitlement({ plan: 'free', status: 'none', usage: 'short_reading', used: 2 }).allowed).toBe(true);
+    expect(checkEntitlement({ plan: 'free', status: 'none', usage: 'short_reading', used: 3 }).allowed).toBe(false);
+    expect(checkEntitlement({ plan: 'pro_monthly', status: 'active', usage: 'short_reading', used: 29 }).allowed).toBe(true);
+    expect(checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'short_reading', used: 99 }).allowed).toBe(true);
+  });
+});

@@ -1,0 +1,33 @@
+import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http';
+import { getAuthedUser } from '../_lib/auth';
+import { ensureSubscription } from '../_lib/services/SubscriptionRepository';
+import { getOrCreateQuota } from '../_lib/services/UsageRepository';
+import { planLimitsFromEnv } from '../_lib/env';
+import { effectivePlan } from '../../shared/entitlement';
+import { USER_MESSAGES } from '../../shared/productCopy';
+
+// Returns the caller's current-month usage + remaining allowances.
+export default async function handler(req: ApiRequest, res: ApiResponse) {
+  const user = await getAuthedUser(req);
+  if (!user) return sendJson(res, 401, { ok: false, message: USER_MESSAGES.loginRequired });
+
+  try {
+    const sub = await ensureSubscription(user.userId);
+    const quota = await getOrCreateQuota(user.userId, sub.plan);
+    const plan = effectivePlan(sub.plan, sub.status);
+    const limits = planLimitsFromEnv()[plan];
+
+    return sendJson(res, 200, {
+      ok: true,
+      plan,
+      usage: {
+        short_reading: { used: quota.free_ai_count, limit: limits.shortAiPerMonth },
+        premium_report: { used: quota.premium_report_count, limit: limits.premiumReportPerMonth },
+        premium_chat: { used: quota.premium_chat_count, limit: limits.premiumChatPerMonth },
+        tarot: { used: quota.tarot_draw_count, limit: limits.tarotPerDay },
+      },
+    });
+  } catch {
+    return sendJson(res, 200, { ok: false, message: USER_MESSAGES.genericError });
+  }
+}
