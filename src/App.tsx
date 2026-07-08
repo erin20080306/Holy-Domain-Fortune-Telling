@@ -44,7 +44,7 @@ function Shell() {
   }, []);
 
   return (
-    <>
+    <div className="min-h-screen bg-[#050508]">
       <div className="app-shell" style={{ paddingBottom: 0, minHeight: 0 }}>
         <OfflineBanner online={online} />
       </div>
@@ -89,7 +89,7 @@ function Shell() {
 
       <InstallBanner />
       <UpdateBanner visible={needRefresh} onUpdate={() => doUpdate?.()} />
-    </>
+    </div>
   );
 }
 

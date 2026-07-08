@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import { api } from '../lib/api';
 
 export function AuditLogScreen() {
@@ -19,7 +20,13 @@ export function AuditLogScreen() {
 
   return (
     <div className="app-shell" style={{ maxWidth: 900 }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+      <button
+        onClick={() => nav('/admin')}
+        className="absolute top-8 left-8 text-white/30 hover:text-[#A89882] transition-colors"
+      >
+        <ChevronLeft size={24} />
+      </button>
+      <div className="row" style={{ justifyContent: 'space-between', paddingTop: 60 }}>
         <h1 className="brand-title" style={{ fontSize: 28, margin: 0 }}>
           操作紀錄
         </h1>

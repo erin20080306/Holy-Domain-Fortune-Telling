@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import { PLAN_LABEL, type PlanId } from '@shared/plans';
 import { api } from '../lib/api';
 
-// 核心數據中心 / Super Admin Dashboard. All numbers come from the backend
-// (never fake). Model / provider names are hidden unless the backend explicitly
-// returns provider_debug_visible=true (super_admin + env flag).
 export function AdminDashboard() {
   const nav = useNavigate();
   const [stats, setStats] = useState<any>(null);
@@ -41,7 +39,13 @@ export function AdminDashboard() {
   if (forbidden) {
     return (
       <div className="app-shell">
-        <div className="glass-card">
+        <button
+          onClick={() => nav('/')}
+          className="absolute top-8 left-8 text-white/30 hover:text-[#A89882] transition-colors"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <div className="glass-card pt-16">
           <p className="muted">此區僅限管理員存取。</p>
           <button className="btn ghost" onClick={() => nav('/app')}>
             返回
@@ -60,7 +64,13 @@ export function AdminDashboard() {
 
   return (
     <div className="app-shell" style={{ maxWidth: 900 }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+      <button
+        onClick={() => nav('/')}
+        className="absolute top-8 left-8 text-white/30 hover:text-[#A89882] transition-colors"
+      >
+        <ChevronLeft size={24} />
+      </button>
+      <div className="row" style={{ justifyContent: 'space-between', paddingTop: 60 }}>
         <h1 className="brand-title" style={{ fontSize: 30, margin: 0 }}>
           核心數據中心
         </h1>
