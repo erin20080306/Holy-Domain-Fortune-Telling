@@ -24,10 +24,15 @@ const COLUMN: Record<UsageType, keyof UsageQuotaRow> = {
   ziwei: 'ziwei_count',
 };
 
-// Most usage resets monthly. Tarot is promised as a daily draw, so it uses the
-// Taipei day key while still sharing the existing quota table.
-export function getUsageBucketKey(usage: UsageType, date = new Date()): string {
-  return usage === 'tarot' ? getTaipeiDayKey(date) : getTaipeiUsageMonth(date);
+// Most usage resets monthly. Free-tier tarot is a daily draw, while paid plans
+// get a monthly tarot quota.
+export function getUsageBucketKey(
+  usage: UsageType,
+  date = new Date(),
+  plan?: PlanId,
+): string {
+  const paidTarot = usage === 'tarot' && (plan === 'pro_monthly' || plan === 'master_monthly');
+  return usage === 'tarot' && !paidTarot ? getTaipeiDayKey(date) : getTaipeiUsageMonth(date);
 }
 
 function emptyQuota(userId: string, plan: PlanId, month: string): UsageQuotaRow {

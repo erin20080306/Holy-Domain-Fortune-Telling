@@ -43,7 +43,9 @@ for (const file of srcFiles) {
 const bannedInBundle = [
   'Claude',
   'claude-sonnet',
-  'Gemini',
+  // Do not ban bare "Gemini"; astrology libraries may emit it as zodiac copy.
+  'Gemini API',
+  'GEMINI_API_KEY',
   'gemini-3.1',
   'Anthropic',
   'model_name',

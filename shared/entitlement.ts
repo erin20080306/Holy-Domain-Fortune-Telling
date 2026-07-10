@@ -47,7 +47,7 @@ function limitForUsage(limits: PlanLimits, usage: UsageType): number {
     case 'premium_chat':
       return limits.premiumChatPerMonth;
     case 'tarot':
-      return limits.tarotPerDay;
+      return limits.tarotPerPeriod;
     case 'bazi':
     case 'ziwei':
       // Bazi/ziwei chart drawing is unlimited for all tiers (no AI cost).

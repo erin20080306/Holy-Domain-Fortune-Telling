@@ -31,7 +31,7 @@ export interface PlanLimits {
   shortAiPerMonth: number;
   premiumReportPerMonth: number;
   premiumChatPerMonth: number;
-  tarotPerDay: number;
+  tarotPerPeriod: number;
 }
 
 // Defaults mirror .env.example. The server reads env in shared/env.ts.
@@ -40,19 +40,19 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     shortAiPerMonth: 3,
     premiumReportPerMonth: 0,
     premiumChatPerMonth: 0,
-    tarotPerDay: 1,
+    tarotPerPeriod: 1,
   },
   pro_monthly: {
     shortAiPerMonth: 30,
     premiumReportPerMonth: 2,
     premiumChatPerMonth: 30,
-    tarotPerDay: 1,
+    tarotPerPeriod: 30,
   },
   master_monthly: {
     shortAiPerMonth: 100,
     premiumReportPerMonth: 8,
     premiumChatPerMonth: 150,
-    tarotPerDay: 1,
+    tarotPerPeriod: 50,
   },
 };
 
@@ -72,7 +72,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     title: '見習星辰',
     price: 'NT$0 / 永久',
     features: [
-      '每日塔羅 1 次',
+      '每日塔羅 1 次（80–150 字）',
       '星座 / 生肖 / 生命靈數',
       '每月 3 次命理短解讀',
       '基礎命理功能',
@@ -87,6 +87,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     features: [
       '每月 2 份 3,000 字（約 2–3 頁 A4）深度命理報告',
       '每月 30 次命理短解讀',
+      '每月 30 次塔羅神諭短讀（80–150 字）',
       '每月 30 則命盤／報告追問對話',
       '無廣告',
       '可保存歷史報告',
@@ -101,6 +102,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     features: [
       '每月 8 份 3,000 字（約 2–3 頁 A4）深度命理報告',
       '每月 100 次命理短解讀',
+      '每月 50 次塔羅神諭短讀（80–150 字）',
       '每月 150 則命盤／報告追問對話',
       '優先客服',
       '無廣告',

@@ -6,13 +6,16 @@ import { FORTUNE_CATEGORIES } from '@shared/categories';
 import { formatChineseBirthHour, formatChineseBirthHourInline } from '@shared/chineseTime';
 import { buildFortuneChartData } from '@shared/fortuneChart';
 import { formatLunarDateForPrompt } from '@shared/lunarCalendar';
-import { PLAN_LABEL, type PlanId } from '@shared/plans';
+import { PLAN_DISPLAY, PLAN_LABEL, type PlanId } from '@shared/plans';
 import { useAuth } from '../state/AuthContext';
 import { api } from '../lib/api';
+import { PAYPAL_LINKS } from '../lib/env';
 
 const NEEDS_NAME = new Set(['name']);
 const MIN_BIRTH_YEAR = 1900;
 const MAX_BIRTH_YEAR = new Date().getFullYear();
+const PLAN_PROMPT_DISMISS_KEY = 'mystic.planPrompt.dismissedSession';
+const ACTIVE_PAID_STATUSES = new Set(['active', 'manual_active']);
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1));
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => String(i + 1));
 const CHART_SUMMARY_LABELS = [
@@ -113,6 +116,41 @@ const REPORT_ACCENTS: Record<string, ReportAccent> = {
   },
 };
 
+interface SubscriptionLike {
+  plan?: string;
+  status?: string;
+  current_period_end?: string | null;
+}
+
+function readPlanPromptDismissed(): boolean {
+  try {
+    return window.sessionStorage.getItem(PLAN_PROMPT_DISMISS_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function rememberPlanPromptDismissed() {
+  try {
+    window.sessionStorage.setItem(PLAN_PROMPT_DISMISS_KEY, 'true');
+  } catch {
+    /* ignore */
+  }
+}
+
+function isActivePaidSubscription(subscription: SubscriptionLike | null): boolean {
+  if (!subscription || subscription.plan === 'free') return false;
+  if (!ACTIVE_PAID_STATUSES.has(subscription.status ?? 'none')) return false;
+  if (!subscription.current_period_end) return true;
+
+  const expiresAt = Date.parse(subscription.current_period_end);
+  return !Number.isFinite(expiresAt) || expiresAt > Date.now();
+}
+
+function paypalLinkForPlan(planId: PlanId): string {
+  return planId === 'master_monthly' ? PAYPAL_LINKS.master_monthly : PAYPAL_LINKS.pro_monthly;
+}
+
 function pad2(value: string): string {
   return value.padStart(2, '0');
 }
@@ -162,7 +200,11 @@ function formatGenerateError(res: any, usageType: string): string {
   const hasQuotaNumbers = Number.isFinite(used) && Number.isFinite(limit);
 
   if (res?.reason === 'quota_exhausted' && hasQuotaNumbers) {
-    return `本月${label}額度已用完（已用 ${used} / 每月 ${limit} 次）。請下個月再使用，或至方案頁升級／調整方案。`;
+    const dailyTarot = usageType === 'tarot' && limit <= 1;
+    const usedPeriod = dailyTarot ? '今日' : '本月';
+    const limitPeriod = dailyTarot ? '每日' : '每月';
+    const resetHint = dailyTarot ? '明日' : '下個月';
+    return `${usedPeriod}${label}額度已用完（已用 ${used} / ${limitPeriod} ${limit} 次）。請${resetHint}再使用，或至方案頁升級／調整方案。`;
   }
 
   if (res?.reason === 'plan_required') {
@@ -421,7 +463,7 @@ function GeneratingStatus({
   const steps = premium
     ? ['校對出生國曆、農曆與命理時辰', '排出八字四柱、大運與紫微十二宮', '整理性格底盤、事業財運與感情脈絡', '撰寫專業命理老師深度書面報告']
     : tarot
-      ? ['抽取牌陣與正逆位', '整理目前狀態與阻礙', '生成表格式短讀與行動建議']
+      ? ['抽取牌陣與正逆位', '整理目前狀態與阻礙', '生成 80–150 字短讀與行動建議']
       : ['校對算命者資料', '整理系統排盤重點', '生成表格式短讀與近期建議'];
 
   return (
@@ -440,7 +482,9 @@ function GeneratingStatus({
           <p className="mt-2 text-sm font-light leading-7 tracking-wide text-slate-300">
             {premium
               ? `${categoryName} 正在校盤、分章細論與整理專業報告，請稍候。`
-              : `${categoryName} 正在整理重點，短讀會以表格快速呈現。`}
+              : tarot
+                ? `${categoryName} 正在整理牌陣重點，會以簡短文字直接解讀。`
+                : `${categoryName} 正在整理重點，短讀會以表格快速呈現。`}
           </p>
         </div>
       </div>
@@ -453,6 +497,113 @@ function GeneratingStatus({
             <span className="text-sm font-light leading-6 tracking-wide text-slate-200">{step}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PlanPromptModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/80 px-3 pb-[calc(var(--safe-bottom)+12px)] pt-[calc(var(--safe-top)+12px)] backdrop-blur-md animate-[fadeIn_0.3s_ease-out] sm:items-center sm:p-5"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-24px)] w-full max-w-5xl overflow-y-auto rounded-[1.5rem] border border-[#A89882]/25 bg-[#08080d] p-4 shadow-[0_24px_90px_rgba(0,0,0,0.72)] custom-scrollbar sm:rounded-[2rem] sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="選擇方案"
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold tracking-[0.28em] text-[#A89882]/75">MYSTIC PLAN</p>
+            <h3 className="mt-2 text-xl font-light tracking-widest text-white sm:text-2xl">選擇你的命理解讀方案</h3>
+            <p className="mt-2 max-w-2xl text-sm font-light leading-7 tracking-wide text-slate-400">
+              免費可先體驗，訂閱可解鎖深度報告、更多短讀、塔羅與命理老師追問。
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="關閉方案提示"
+          >
+            <Icons.X size={18} />
+          </button>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          {PLAN_DISPLAY.map((plan) => {
+            const paid = plan.id !== 'free';
+            const highlighted = plan.id === 'pro_monthly';
+            return (
+              <section
+                key={plan.id}
+                className={`relative flex min-h-[360px] flex-col rounded-2xl border p-5 ${
+                  highlighted
+                    ? 'border-[#A89882]/55 bg-[#A89882]/[0.085] shadow-[0_18px_44px_rgba(168,152,130,0.12)]'
+                    : 'border-white/10 bg-white/[0.025]'
+                }`}
+              >
+                {highlighted && (
+                  <div className="absolute right-4 top-4 rounded-full border border-[#A89882]/35 bg-[#A89882]/15 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-[#f4e7d3]">
+                    推薦
+                  </div>
+                )}
+                <div className="mb-5">
+                  <h4 className="pr-16 text-lg font-light tracking-widest text-white">{plan.title}</h4>
+                  <div className="mt-3 text-2xl font-serif text-[#f3ead9]">{plan.price}</div>
+                </div>
+                <ul className="mb-6 flex-1 space-y-3 text-sm font-light leading-6 tracking-wide text-slate-300">
+                  {plan.features.slice(0, 5).map((feature) => (
+                    <li key={feature} className="flex gap-3">
+                      <Icons.Check size={15} className="mt-1 shrink-0 text-[#A89882]" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                {paid ? (
+                  <a
+                    href={paypalLinkForPlan(plan.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onClose}
+                    className="mt-auto flex w-full items-center justify-center gap-2 rounded-full bg-[#A89882] px-5 py-3.5 text-center text-xs font-semibold tracking-[0.18em] text-[#050508] transition-colors hover:bg-white"
+                  >
+                    直接訂閱
+                    <Icons.ArrowRight size={15} />
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="mt-auto w-full rounded-full border border-white/15 px-5 py-3.5 text-xs font-semibold tracking-[0.18em] text-white transition-colors hover:bg-white hover:text-[#050508]"
+                  >
+                    繼續免費體驗
+                  </button>
+                )}
+              </section>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -475,6 +626,7 @@ export function DashboardScreen() {
   const [birthDay, setBirthDay] = useState('');
   const [birthTime, setBirthTime] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [planPromptDismissed, setPlanPromptDismissed] = useState(readPlanPromptDismissed);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const plan = (subscription?.plan ?? 'free') as PlanId;
@@ -502,6 +654,17 @@ export function DashboardScreen() {
   const lifePathFact = fortuneChartData.facts.find((fact) => fact.label === '生命靈數')?.value ?? '未提供';
   const hasPartialBirthDate = Boolean(birthYear || birthMonth || birthDay);
   const resultTier = resultTierMeta(resultKind);
+  const showPlanPrompt = Boolean(
+    subscription &&
+      !isAdmin &&
+      !planPromptDismissed &&
+      !isActivePaidSubscription(subscription),
+  );
+
+  const dismissPlanPrompt = () => {
+    rememberPlanPromptDismissed();
+    setPlanPromptDismissed(true);
+  };
 
   const pick = (id: string) => {
     setSelected(id);
@@ -937,6 +1100,11 @@ export function DashboardScreen() {
       </div>
 
     </div>
+      {showPlanPrompt &&
+        createPortal(
+          <PlanPromptModal onClose={dismissPlanPrompt} />,
+          document.body,
+        )}
       {chatOpen &&
         createPortal(
           <ChatPanel

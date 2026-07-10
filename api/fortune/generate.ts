@@ -8,7 +8,7 @@ import {
   usedCount,
 } from '../_lib/services/UsageRepository.js';
 import { planLimitsFromEnv } from '../_lib/env.js';
-import { checkEntitlement } from '../../shared/entitlement.js';
+import { checkEntitlement, effectivePlan } from '../../shared/entitlement.js';
 import { USER_MESSAGES } from '../../shared/productCopy.js';
 import type { UsageType } from '../../shared/plans.js';
 import { generateReading } from '../_lib/ai/generateReading.js';
@@ -47,7 +47,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const body = raw.length ? JSON.parse(raw.toString('utf8')) : {};
   const usage = body.usage_type as UsageType;
   if (!ALLOWED.includes(usage)) return sendJson(res, 400, { ok: false });
-  const usageBucket = getUsageBucketKey(usage);
+  let usageBucket = getUsageBucketKey(usage);
 
   // Admins have unlimited access and never require a subscription. Skip all
   // entitlement/quota enforcement for them.
@@ -57,7 +57,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (!admin) {
     try {
       const sub = await ensureSubscription(user.userId);
-      const quota = await getOrCreateQuota(user.userId, sub.plan, usageBucket);
+      const plan = effectivePlan(sub.plan, sub.status, sub.current_period_end);
+      usageBucket = getUsageBucketKey(usage, new Date(), plan);
+      const quota = await getOrCreateQuota(user.userId, plan, usageBucket);
 
       gate = checkEntitlement({
         plan: sub.plan,

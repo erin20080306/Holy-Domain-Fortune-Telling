@@ -179,6 +179,7 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
     focus: '給予貼近提問的命理指引',
   };
   const premium = inputs.depth === 'premium';
+  const tarotReading = inputs.category === 'tarot';
 
   const formatRule = premium
     ? [
@@ -203,6 +204,13 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
         '至少加入 2 個「老師提醒」段落，用自然段落寫出使用者最該注意的盲點與轉運關鍵，不要放在表格裡草草帶過。',
         '整篇報告必須貼近使用者提問；不要堆砌吉凶詞，需包含具體情境、判斷依據、時間節奏、風險提醒與可執行步驟。',
       ].join('\n')
+    : tarotReading
+      ? [
+          '【輸出層級】塔羅神諭短讀。請以 80–150 字完成，像老師直接解牌與給下一步提醒。',
+          '請先點出三張牌的主軸，再整合成一段清楚判讀；不要寫成深度報告，也不要使用長篇表格。',
+          '內容必須包含：當下性格狀態、事件阻礙、可能走向、1 個可立刻執行的行動建議。',
+          '語氣簡短但要有命理老師的判斷感；避免空泛祝福或只重述牌名。',
+        ].join('\n')
     : [
         '【輸出層級】AI 短讀。這是快速掃讀內容，必須和深度報告明顯不同：只抓重點、少量段落、表格摘要，不展開成長篇書面報告。',
         '請寫一篇約 650–900 字的表格式短讀，讓使用者 1–2 分鐘可讀完。',
@@ -224,6 +232,8 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
     '若使用者未提供足夠資訊（如生日），仍先給出通則性解讀，並在結尾溫和提醒可補充哪些資料以獲得更精準的分析。',
     premium
       ? '現在輸出的是付費深度報告：要有專業命理老師書面報告的厚度，交代判讀依據、優勢與盲點、事件情境、時間節奏、風險控管與調整方法；若系統提供八字四柱、大運或紫微十二宮星曜，必須以這些資料為核心判讀。'
+      : tarotReading
+        ? '現在輸出的是塔羅神諭短讀：80–150 字，直接解牌、指出當下性格狀態與下一步，不要寫成表格式長文。'
       : '現在輸出的是 AI 短讀：請保持精簡、表格式、重點式，不要寫成付費深度報告，也不要逐項展開大運或十二宮細節。',
   ].join('\n');
 
@@ -238,8 +248,16 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
   });
   parts.push(`【服務項目】${meta.name}`);
   parts.push(`【解讀重點】${meta.focus}`);
-  parts.push(`【共同專業規則】\n${PERSONALITY_RULES}`);
-  parts.push('【報告開頭要求】正文第一節一開始必須先列「算命者資料」，包含姓名、性別、出生國曆、出生農曆、出生時間、命理時辰；未提供的欄位請標示「未提供」。');
+  parts.push(
+    tarotReading
+      ? '【共同專業規則】塔羅短讀也必須帶到「當下性格狀態或行為模式」，但只抓最關鍵的一點，不要展開成完整性格報告。'
+      : `【共同專業規則】\n${PERSONALITY_RULES}`,
+  );
+  parts.push(
+    tarotReading
+      ? '【短讀開頭要求】開頭請先用一行列「算命者資料」，包含姓名、性別、出生國曆、出生農曆與時辰；未提供的欄位請標示「未提供」。'
+      : '【報告開頭要求】正文第一節一開始必須先列「算命者資料」，包含姓名、性別、出生國曆、出生農曆、出生時間、命理時辰；未提供的欄位請標示「未提供」。',
+  );
   parts.push(formatFortuneChartForPrompt(chartData));
   parts.push(`【時辰校正】十二時辰分界為：${CHINESE_HOUR_RULE_TEXT}。若系統已提供命理時辰，請直接採用，不可把 03:00-04:59 誤判為丑時。`);
   parts.push(`【提問】${inputs.question?.trim() || '請給我整體的近期運勢指引。'}`);
@@ -251,7 +269,7 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
     const cards = drawTarot(3);
     const spread = cards.map((c, i) => `${POSITIONS[i]}：${c}`).join('\n');
     parts.push(`【抽出的牌陣】\n${spread}`);
-    parts.push('請依三張牌的牌義與正逆位，逐一解讀每個位置，最後給整體結論與建議。');
+    parts.push('請把三張牌整合成 80–150 字短讀，可提及牌位與正逆位，但不要逐張長篇展開。');
   }
 
   parts.push(formatRule);

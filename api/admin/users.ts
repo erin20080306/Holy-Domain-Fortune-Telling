@@ -2,7 +2,7 @@ import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
 import { getAuthedUser, isAdmin } from '../_lib/auth.js';
 import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
 import { planLimitsFromEnv } from '../_lib/env.js';
-import { getTaipeiUsageMonth } from '../../shared/usageMonth.js';
+import { getTaipeiDayKey, getTaipeiUsageMonth } from '../../shared/usageMonth.js';
 import { effectivePlan } from '../../shared/entitlement.js';
 import { USER_MESSAGES } from '../../shared/productCopy.js';
 import type { PlanId, SubscriptionStatus } from '../../shared/plans.js';
@@ -24,6 +24,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   const admin = getSupabaseAdmin();
   const month = getTaipeiUsageMonth();
+  const today = getTaipeiDayKey();
 
   let query = admin
     .from('user_profiles')
@@ -50,20 +51,24 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       .from('user_usage_quotas')
       .select('*')
       .in('user_id', ids)
-      .eq('usage_month_taipei', month),
+      .in('usage_month_taipei', [month, today]),
   ]);
 
   const subMap = new Map(((subs ?? []) as any[]).map((s) => [s.user_id, s] as const));
-  const quotaMap = new Map(((quotas ?? []) as any[]).map((qm) => [qm.user_id, qm] as const));
+  const quotaMap = new Map(
+    ((quotas ?? []) as any[]).map((qm) => [`${qm.user_id}:${qm.usage_month_taipei}`, qm] as const),
+  );
   const limitsByPlan = planLimitsFromEnv();
 
   let rows = ((profiles ?? []) as any[]).map((p) => {
     const s = subMap.get(p.user_id);
-    const u = quotaMap.get(p.user_id);
     const plan = (s?.plan ?? 'free') as PlanId;
     const status = (s?.status ?? 'none') as SubscriptionStatus;
     const currentPeriodEnd = s?.current_period_end ?? null;
     const effective = effectivePlan(plan, status, currentPeriodEnd);
+    const u = quotaMap.get(`${p.user_id}:${month}`);
+    const tarotQuotaKey = effective === 'free' ? today : month;
+    const tarotQuota = quotaMap.get(`${p.user_id}:${tarotQuotaKey}`);
     const limits = limitsByPlan[effective];
     return {
       user_id: p.user_id,
@@ -82,6 +87,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       premium_report_limit: limits.premiumReportPerMonth,
       premium_chat_used: u?.premium_chat_count ?? 0,
       premium_chat_limit: limits.premiumChatPerMonth,
+      tarot_used: tarotQuota?.tarot_draw_count ?? 0,
+      tarot_limit: limits.tarotPerPeriod,
       login_count: p.login_count ?? 0,
       last_login_at: p.last_login_at,
       last_login_user_agent: p.last_login_user_agent,

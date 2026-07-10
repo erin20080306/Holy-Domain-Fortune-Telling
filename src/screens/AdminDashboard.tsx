@@ -307,6 +307,7 @@ export function AdminDashboard() {
                   ['電話', u.phone ?? '—'],
                   ['短解讀', formatQuota(u.short_reading_used, u.short_reading_limit)],
                   ['報告', formatQuota(u.premium_report_used, u.premium_report_limit)],
+                  ['塔羅', formatQuota(u.tarot_used, u.tarot_limit)],
                   ['登入', String(u.login_count ?? 0)],
                   ['最後登入', (u.last_login_at ?? '').slice(0, 16).replace('T', ' ') || '—'],
                 ].map(([label, value]) => (

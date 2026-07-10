@@ -71,12 +71,12 @@ describe('checkEntitlement - short readings', () => {
 });
 
 describe('checkEntitlement - tarot', () => {
-  it('all plans get one daily tarot draw', () => {
+  it('free gets one tarot draw while paid plans get larger tarot quotas', () => {
     expect(checkEntitlement({ plan: 'free', status: 'none', usage: 'tarot', used: 0 }).allowed).toBe(true);
     expect(checkEntitlement({ plan: 'free', status: 'none', usage: 'tarot', used: 1 }).allowed).toBe(false);
-    expect(checkEntitlement({ plan: 'pro_monthly', status: 'active', usage: 'tarot', used: 0 }).allowed).toBe(true);
-    expect(checkEntitlement({ plan: 'pro_monthly', status: 'active', usage: 'tarot', used: 1 }).allowed).toBe(false);
-    expect(checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'tarot', used: 0 }).allowed).toBe(true);
-    expect(checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'tarot', used: 1 }).allowed).toBe(false);
+    expect(checkEntitlement({ plan: 'pro_monthly', status: 'active', usage: 'tarot', used: 29 }).allowed).toBe(true);
+    expect(checkEntitlement({ plan: 'pro_monthly', status: 'active', usage: 'tarot', used: 30 }).allowed).toBe(false);
+    expect(checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'tarot', used: 49 }).allowed).toBe(true);
+    expect(checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'tarot', used: 50 }).allowed).toBe(false);
   });
 });

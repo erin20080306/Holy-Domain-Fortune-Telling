@@ -13,11 +13,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   try {
     const sub = await ensureSubscription(user.userId);
-    const [quota, tarotQuota] = await Promise.all([
-      getOrCreateQuota(user.userId, sub.plan, getUsageBucketKey('short_reading')),
-      getOrCreateQuota(user.userId, sub.plan, getUsageBucketKey('tarot')),
-    ]);
     const plan = effectivePlan(sub.plan, sub.status, sub.current_period_end);
+    const [quota, tarotQuota] = await Promise.all([
+      getOrCreateQuota(user.userId, plan, getUsageBucketKey('short_reading', new Date(), plan)),
+      getOrCreateQuota(user.userId, plan, getUsageBucketKey('tarot', new Date(), plan)),
+    ]);
     const limits = planLimitsFromEnv()[plan];
 
     return sendJson(res, 200, {
@@ -27,7 +27,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         short_reading: { used: quota.free_ai_count, limit: limits.shortAiPerMonth },
         premium_report: { used: quota.premium_report_count, limit: limits.premiumReportPerMonth },
         premium_chat: { used: quota.premium_chat_count, limit: limits.premiumChatPerMonth },
-        tarot: { used: tarotQuota.tarot_draw_count, limit: limits.tarotPerDay },
+        tarot: { used: tarotQuota.tarot_draw_count, limit: limits.tarotPerPeriod },
       },
     });
   } catch {
