@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { FORTUNE_CATEGORIES } from '@shared/categories';
+import { formatLunarDateForPrompt } from '@shared/lunarCalendar';
 import { PLAN_LABEL, type PlanId } from '@shared/plans';
 import { useAuth } from '../state/AuthContext';
 import { api } from '../lib/api';
 
-const NEEDS_BIRTH = new Set(['bazi', 'ziwei', 'zodiac', 'astro', 'numerology', 'humandesign']);
 const NEEDS_NAME = new Set(['name']);
 const MIN_BIRTH_YEAR = 1900;
 const MAX_BIRTH_YEAR = new Date().getFullYear();
@@ -117,6 +117,11 @@ function composeBirthDate(year: string, month: string, day: string): string | un
   if (m < 1 || m > 12 || d < 1 || d > daysInGregorianMonth(year, month)) return undefined;
 
   return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function formatSolarDateForDisplay(solarDate: string): string {
+  const [year, month, day] = solarDate.split('-').map(Number);
+  return `${year}年${month}月${day}日`;
 }
 
 function reportHeading(line: string): string | null {
@@ -337,6 +342,9 @@ export function DashboardScreen() {
   const selectedCat = FORTUNE_CATEGORIES.find((c) => c.id === selected) ?? null;
   const birthDayMax = daysInGregorianMonth(birthYear, birthMonth);
   const reportSections = result ? splitReportSections(result) : [];
+  const composedBirthDate = composeBirthDate(birthYear, birthMonth, birthDay);
+  const lunarBirthDate = composedBirthDate ? formatLunarDateForPrompt(composedBirthDate) : null;
+  const hasPartialBirthDate = Boolean(birthYear || birthMonth || birthDay);
 
   const pick = (id: string) => {
     setSelected(id);
@@ -362,9 +370,7 @@ export function DashboardScreen() {
 
   const draw = async (usageType: string) => {
     if (!selectedCat) return;
-    const needsBirth = NEEDS_BIRTH.has(selectedCat.id);
-    const composedBirthDate = needsBirth ? composeBirthDate(birthYear, birthMonth, birthDay) : undefined;
-    if (needsBirth && (birthYear || birthMonth || birthDay) && !composedBirthDate) {
+    if (hasPartialBirthDate && !composedBirthDate) {
       setResult('請輸入完整且有效的出生年月日。');
       return;
     }
@@ -378,7 +384,7 @@ export function DashboardScreen() {
         name: NEEDS_NAME.has(selectedCat.id) ? fullName.trim() || undefined : undefined,
         gender: gender || undefined,
         birth_date: composedBirthDate,
-        birth_time: NEEDS_BIRTH.has(selectedCat.id) ? birthTime || undefined : undefined,
+        birth_time: birthTime || undefined,
       });
       if (res?.ok) {
         setResult(res.content);
@@ -461,95 +467,115 @@ export function DashboardScreen() {
               />
             )}
 
-            {NEEDS_BIRTH.has(selectedCat.id) && (
-              <div className="space-y-3">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生日期</span>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">西元年</span>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={birthYear}
-                          onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          placeholder="1983"
-                          aria-label="出生西元年"
-                          className="w-full bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30"
-                        />
-                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">年</span>
-                      </div>
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">月份</span>
-                      <div className="relative">
-                        <select
-                          value={birthMonth}
-                          onChange={(e) => setBirthMonth(e.target.value)}
-                          aria-label="出生月份"
-                          style={{ colorScheme: 'dark' }}
-                          className="w-full appearance-none bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                        >
-                          <option value="">選擇月份</option>
-                          {MONTH_OPTIONS.map((month) => (
-                            <option key={month} value={month}>
-                              {month} 月
-                            </option>
-                          ))}
-                        </select>
-                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">月</span>
-                      </div>
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">日期</span>
-                      <div className="relative">
-                        <select
-                          value={birthDay}
-                          onChange={(e) => setBirthDay(e.target.value)}
-                          aria-label="出生日"
-                          style={{ colorScheme: 'dark' }}
-                          className="w-full appearance-none bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                        >
-                          <option value="">選擇日期</option>
-                          {DAY_OPTIONS.slice(0, birthDayMax).map((day) => (
-                            <option key={day} value={day}>
-                              {day} 日
-                            </option>
-                          ))}
-                        </select>
-                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">日</span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生時間</span>
-                    <input
-                      type="time"
-                      value={birthTime}
-                      onChange={(e) => setBirthTime(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                      className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                    />
+            <div className="space-y-3">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">算命者出生日期</span>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">西元年</span>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={birthYear}
+                        onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        placeholder="1983"
+                        aria-label="出生西元年"
+                        className="w-full bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30"
+                      />
+                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">年</span>
+                    </div>
                   </label>
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">性別（選填）</span>
-                    <select
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                      className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                    >
-                      <option value="">請選擇</option>
-                      <option value="男">男</option>
-                      <option value="女">女</option>
-                    </select>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">月份</span>
+                    <div className="relative">
+                      <select
+                        value={birthMonth}
+                        onChange={(e) => setBirthMonth(e.target.value)}
+                        aria-label="出生月份"
+                        style={{ colorScheme: 'dark' }}
+                        className="w-full appearance-none bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                      >
+                        <option value="">選擇月份</option>
+                        {MONTH_OPTIONS.map((month) => (
+                          <option key={month} value={month}>
+                            {month} 月
+                          </option>
+                        ))}
+                      </select>
+                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">月</span>
+                    </div>
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">日期</span>
+                    <div className="relative">
+                      <select
+                        value={birthDay}
+                        onChange={(e) => setBirthDay(e.target.value)}
+                        aria-label="出生日"
+                        style={{ colorScheme: 'dark' }}
+                        className="w-full appearance-none bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                      >
+                        <option value="">選擇日期</option>
+                        {DAY_OPTIONS.slice(0, birthDayMax).map((day) => (
+                          <option key={day} value={day}>
+                            {day} 日
+                          </option>
+                        ))}
+                      </select>
+                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">日</span>
+                    </div>
                   </label>
                 </div>
               </div>
-            )}
+
+              <div className="rounded-2xl border border-[#A89882]/20 bg-black/25 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Icons.CalendarDays size={14} className="text-[#A89882]" />
+                  <span className="text-[10px] text-[#A89882] tracking-[0.2em]">國曆 / 農曆確認</span>
+                </div>
+                <div className="grid gap-2 text-sm leading-7 tracking-wide">
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+                    <span className="text-[10px] text-white/45 tracking-[0.18em]">國曆</span>
+                    <span className="text-slate-100">
+                      {composedBirthDate ? formatSolarDateForDisplay(composedBirthDate) : '請先填寫完整年月日'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+                    <span className="text-[10px] text-white/45 tracking-[0.18em]">農曆</span>
+                    <span className="text-slate-100">
+                      {lunarBirthDate ?? '填寫後自動換算'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生時間</span>
+                  <input
+                    type="time"
+                    value={birthTime}
+                    onChange={(e) => setBirthTime(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">性別（選填）</span>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                  >
+                    <option value="">請選擇</option>
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                  </select>
+                </label>
+              </div>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button
@@ -591,6 +617,33 @@ export function DashboardScreen() {
             <div className="flex items-center gap-2 text-[10px] tracking-widest text-[#A89882]/70">
               <Icons.ListTree size={14} />
               {reportSections.length} 節
+            </div>
+          </div>
+
+          <div className="mb-6 rounded-2xl border border-[#A89882]/20 bg-black/25 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Icons.UserRound size={14} className="text-[#A89882]" />
+              <span className="text-[10px] text-[#A89882] tracking-[0.2em]">算命者資料</span>
+            </div>
+            <div className="grid gap-3 text-sm leading-7 tracking-wide sm:grid-cols-2">
+              <div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">出生國曆</div>
+                <div className="mt-0.5 text-slate-100">
+                  {composedBirthDate ? formatSolarDateForDisplay(composedBirthDate) : '未提供'}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">出生農曆</div>
+                <div className="mt-0.5 text-slate-100">{lunarBirthDate ?? '未提供'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">出生時間</div>
+                <div className="mt-0.5 text-slate-100">{birthTime || '未提供'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">性別</div>
+                <div className="mt-0.5 text-slate-100">{gender || '未提供'}</div>
+              </div>
             </div>
           </div>
 
