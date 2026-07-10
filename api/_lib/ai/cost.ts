@@ -8,7 +8,7 @@ interface Rate {
 }
 
 const RATES: Record<string, Rate> = {
-  gemini: { in: 0.1, out: 0.4 },
+  gemini: { in: 0.25, out: 1.5 },
   anthropic: { in: 3.0, out: 15.0 },
 };
 
