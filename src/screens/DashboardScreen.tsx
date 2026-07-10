@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { FORTUNE_CATEGORIES } from '@shared/categories';
+import { formatChineseBirthHour, formatChineseBirthHourInline } from '@shared/chineseTime';
 import { formatLunarDateForPrompt } from '@shared/lunarCalendar';
 import { PLAN_LABEL, type PlanId } from '@shared/plans';
 import { useAuth } from '../state/AuthContext';
@@ -344,6 +345,8 @@ export function DashboardScreen() {
   const reportSections = result ? splitReportSections(result) : [];
   const composedBirthDate = composeBirthDate(birthYear, birthMonth, birthDay);
   const lunarBirthDate = composedBirthDate ? formatLunarDateForPrompt(composedBirthDate) : null;
+  const birthHour = birthTime ? formatChineseBirthHour(birthTime) : null;
+  const inlineBirthHour = birthTime ? formatChineseBirthHourInline(birthTime) : null;
   const hasPartialBirthDate = Boolean(birthYear || birthMonth || birthDay);
 
   const pick = (id: string) => {
@@ -547,6 +550,12 @@ export function DashboardScreen() {
                       {lunarBirthDate ?? '填寫後自動換算'}
                     </span>
                   </div>
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+                    <span className="text-[10px] text-white/45 tracking-[0.18em]">時辰</span>
+                    <span className="text-slate-100">
+                      {birthHour ?? '選擇出生時間後自動換算'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -637,8 +646,10 @@ export function DashboardScreen() {
                 <div className="mt-0.5 text-slate-100">{lunarBirthDate ?? '未提供'}</div>
               </div>
               <div>
-                <div className="text-[10px] text-white/45 tracking-[0.18em]">出生時間</div>
-                <div className="mt-0.5 text-slate-100">{birthTime || '未提供'}</div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">出生時間 / 時辰</div>
+                <div className="mt-0.5 text-slate-100">
+                  {birthTime ? `${birthTime}${inlineBirthHour ? `（${inlineBirthHour}）` : ''}` : '未提供'}
+                </div>
               </div>
               <div>
                 <div className="text-[10px] text-white/45 tracking-[0.18em]">性別</div>

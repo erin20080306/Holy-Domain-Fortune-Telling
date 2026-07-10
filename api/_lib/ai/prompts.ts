@@ -1,6 +1,11 @@
 // Builds the system + user prompts for each 命理 category. All copy is
 // Traditional Chinese and the persona never mentions being an AI / model.
 
+import {
+  CHINESE_HOUR_RULE_TEXT,
+  formatChineseBirthHour,
+  formatChineseBirthHourInline,
+} from '../../../shared/chineseTime.js';
 import { formatLunarDateForPrompt } from '../../../shared/lunarCalendar.js';
 
 export interface ChatTurn {
@@ -195,13 +200,17 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
   parts.push(`【服務項目】${meta.name}`);
   parts.push(`【解讀重點】${meta.focus}`);
   parts.push(`【共同專業規則】\n${PERSONALITY_RULES}`);
-  parts.push('【報告開頭要求】正文第一節一開始必須先列「算命者資料」，包含姓名、性別、出生國曆、出生農曆、出生時間；未提供的欄位請標示「未提供」。');
+  parts.push('【報告開頭要求】正文第一節一開始必須先列「算命者資料」，包含姓名、性別、出生國曆、出生農曆、出生時間、命理時辰；未提供的欄位請標示「未提供」。');
 
   if (inputs.name) parts.push(`【姓名】${inputs.name}`);
   if (inputs.gender) parts.push(`【性別】${inputs.gender}`);
+  const birthHour = inputs.birth_time ? formatChineseBirthHour(inputs.birth_time) : null;
+  const inlineBirthHour = inputs.birth_time ? formatChineseBirthHourInline(inputs.birth_time) : null;
   if (inputs.birth_date) {
     parts.push(
-      `【算命者出生國曆】${inputs.birth_date}${inputs.birth_time ? ' ' + inputs.birth_time : '（時辰未提供）'}${
+      `【算命者出生國曆】${inputs.birth_date}${
+        inputs.birth_time ? ` ${inputs.birth_time}${inlineBirthHour ? `（${inlineBirthHour}）` : ''}` : '（時辰未提供）'
+      }${
         inputs.birth_place ? '，' + inputs.birth_place : ''
       }`,
     );
@@ -210,6 +219,10 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
       parts.push(`【算命者出生農曆】${lunarDate}`);
       parts.push('【曆法校正】出生農曆由系統換算，請直接採用；不可自行重算成其他農曆月份或日期。');
     }
+  }
+  if (inputs.birth_time && birthHour) {
+    parts.push(`【算命者命理時辰】${birthHour}`);
+    parts.push(`【時辰校正】十二時辰分界為：${CHINESE_HOUR_RULE_TEXT}。系統已換算命理時辰，請直接採用，不可把 03:00-04:59 誤判為丑時。`);
   }
   parts.push(`【提問】${inputs.question?.trim() || '請給我整體的近期運勢指引。'}`);
 

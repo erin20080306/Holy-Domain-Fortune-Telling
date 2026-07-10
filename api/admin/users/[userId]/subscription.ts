@@ -33,6 +33,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (body.plan !== 'free') {
       patch.source = 'admin_manual';
       if (!body.status) patch.status = 'manual_active';
+    } else {
+      patch.source = 'free';
+      patch.status = body.status ?? 'none';
+      patch.paypal_subscription_id = null;
+      patch.current_period_end = null;
     }
   }
   if (body.status) {

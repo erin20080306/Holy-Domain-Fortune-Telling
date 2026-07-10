@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { PLAN_LABEL, type PlanId } from '@shared/plans';
 import { api } from '../lib/api';
 
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'manual_active']);
+
+function isUserSubscribed(user: any): boolean {
+  return user?.plan !== 'free' && ACTIVE_SUBSCRIPTION_STATUSES.has(user?.status);
+}
+
 export function AdminDashboard() {
   const nav = useNavigate();
   const [stats, setStats] = useState<any>(null);
@@ -117,6 +123,7 @@ export function AdminDashboard() {
                 <th>Email</th>
                 <th>電話</th>
                 <th>方案</th>
+                <th>訂閱</th>
                 <th>來源</th>
                 <th>狀態</th>
                 <th>短解讀</th>
@@ -134,6 +141,7 @@ export function AdminDashboard() {
                   <td>{u.email}</td>
                   <td>{u.phone ?? '—'}</td>
                   <td>{PLAN_LABEL[(u.plan ?? 'free') as PlanId]}</td>
+                  <td>{isUserSubscribed(u) ? '已訂閱' : '未訂閱'}</td>
                   <td>{u.source}</td>
                   <td>{u.status}</td>
                   <td>{u.short_reading_used}</td>
@@ -146,7 +154,7 @@ export function AdminDashboard() {
                       style={{ width: 'auto', padding: '6px 12px' }}
                       onClick={() => setEditing(u)}
                     >
-                      修改
+                      開通/修改
                     </button>
                   </td>
                 </tr>
@@ -208,6 +216,7 @@ function EditUserModal({
 }) {
   const [plan, setPlan] = useState<PlanId>((user.plan ?? 'free') as PlanId);
   const [status, setStatus] = useState(user.status ?? 'none');
+  const [subscribed, setSubscribed] = useState(isUserSubscribed(user));
   const [note, setNote] = useState('');
   const [resetUsage, setResetUsage] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -217,8 +226,8 @@ function EditUserModal({
   const save = async () => {
     setBusy(true);
     await api.admin.updateSubscription(user.user_id, {
-      plan,
-      status,
+      plan: subscribed ? (plan === 'free' ? 'pro_monthly' : plan) : 'free',
+      status: subscribed ? status : 'none',
       admin_note: note,
       reset_month_usage: resetUsage,
     });
@@ -232,6 +241,28 @@ function EditUserModal({
     const res = await api.admin.sendPasswordReset(user.user_id);
     setPwBusy(false);
     setPwMsg(res?.ok ? '已寄出密碼重設信給該使用者。' : res?.message ?? '寄送失敗，請稍後再試。');
+  };
+
+  const updateSubscribed = (checked: boolean) => {
+    setSubscribed(checked);
+    if (checked) {
+      setPlan((current) => (current === 'free' ? 'pro_monthly' : current));
+      setStatus('manual_active');
+    } else {
+      setPlan('free');
+      setStatus('none');
+    }
+  };
+
+  const updatePlan = (nextPlan: PlanId) => {
+    setPlan(nextPlan);
+    if (nextPlan === 'free') {
+      setSubscribed(false);
+      setStatus('none');
+    } else {
+      setSubscribed(true);
+      if (!ACTIVE_SUBSCRIPTION_STATUSES.has(status)) setStatus('manual_active');
+    }
   };
 
   return (
@@ -248,15 +279,38 @@ function EditUserModal({
       }}
     >
       <div className="glass-card" style={{ maxWidth: 420, width: '100%' }}>
-        <h3 style={{ marginTop: 0 }}>修改方案：{user.email}</h3>
-        <label className="label">方案</label>
-        <select className="field" value={plan} onChange={(e) => setPlan(e.target.value as PlanId)}>
+        <h3 style={{ marginTop: 0 }}>會員訂閱開通：{user.email}</h3>
+        <label className="row" style={{ gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
+          <input
+            type="checkbox"
+            checked={subscribed}
+            onChange={(e) => updateSubscribed(e.target.checked)}
+            style={{ width: 'auto', marginTop: 4 }}
+          />
+          <span>
+            <span style={{ display: 'block', color: '#fff', letterSpacing: '0.08em' }}>此會員已訂閱</span>
+            <span className="muted" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
+              開啟後會以後台手動方式開通；關閉則改回免費方案。
+            </span>
+          </span>
+        </label>
+
+        <label className="label">訂閱方案</label>
+        <select className="field" value={plan} onChange={(e) => updatePlan(e.target.value as PlanId)}>
           <option value="free">見習星辰 (free)</option>
           <option value="pro_monthly">星河行者 (pro_monthly)</option>
           <option value="master_monthly">宇宙共鳴 (master_monthly)</option>
         </select>
-        <label className="label">狀態</label>
-        <select className="field" value={status} onChange={(e) => setStatus(e.target.value)}>
+
+        <label className="label">訂閱狀態</label>
+        <select
+          className="field"
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setSubscribed(ACTIVE_SUBSCRIPTION_STATUSES.has(e.target.value));
+          }}
+        >
           {['none', 'pending', 'active', 'manual_active', 'cancelled', 'expired', 'suspended'].map(
             (s) => (
               <option key={s} value={s}>
