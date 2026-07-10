@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { FORTUNE_CATEGORIES } from '@shared/categories';
 import { formatChineseBirthHour, formatChineseBirthHourInline } from '@shared/chineseTime';
+import { buildFortuneChartData } from '@shared/fortuneChart';
 import { formatLunarDateForPrompt } from '@shared/lunarCalendar';
 import { PLAN_LABEL, type PlanId } from '@shared/plans';
 import { useAuth } from '../state/AuthContext';
@@ -347,6 +348,21 @@ export function DashboardScreen() {
   const lunarBirthDate = composedBirthDate ? formatLunarDateForPrompt(composedBirthDate) : null;
   const birthHour = birthTime ? formatChineseBirthHour(birthTime) : null;
   const inlineBirthHour = birthTime ? formatChineseBirthHourInline(birthTime) : null;
+  const fortuneChartData = buildFortuneChartData({
+    category: selectedCat?.id,
+    name: fullName,
+    gender,
+    birthDate: composedBirthDate,
+    birthTime,
+  });
+  const chartSummaryFacts = fortuneChartData.facts.filter(
+    (fact) =>
+      ['生肖', '農曆年干支', '時辰地支', '生命靈數'].includes(fact.label) &&
+      fact.value !== '未提供',
+  );
+  const zodiacFact = fortuneChartData.facts.find((fact) => fact.label === '生肖')?.value ?? '未提供';
+  const yearGanZhiFact = fortuneChartData.facts.find((fact) => fact.label === '農曆年干支')?.value ?? '未提供';
+  const lifePathFact = fortuneChartData.facts.find((fact) => fact.label === '生命靈數')?.value ?? '未提供';
   const hasPartialBirthDate = Boolean(birthYear || birthMonth || birthDay);
 
   const pick = (id: string) => {
@@ -557,6 +573,22 @@ export function DashboardScreen() {
                     </span>
                   </div>
                 </div>
+                {chartSummaryFacts.length > 0 && (
+                  <div className="mt-4 border-t border-white/10 pt-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <Icons.ListChecks size={14} className="text-[#A89882]" />
+                      <span className="text-[10px] text-[#A89882]/80 tracking-[0.2em]">系統排盤資料</span>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {chartSummaryFacts.map((fact) => (
+                        <div key={fact.label} className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5">
+                          <div className="text-[10px] text-white/45 tracking-[0.16em]">{fact.label}</div>
+                          <div className="mt-1 text-sm leading-6 text-slate-100 break-words">{fact.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -654,6 +686,14 @@ export function DashboardScreen() {
               <div>
                 <div className="text-[10px] text-white/45 tracking-[0.18em]">性別</div>
                 <div className="mt-0.5 text-slate-100">{gender || '未提供'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">生肖 / 農曆年干支</div>
+                <div className="mt-0.5 text-slate-100">{zodiacFact} / {yearGanZhiFact}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">生命靈數</div>
+                <div className="mt-0.5 text-slate-100 break-words">{lifePathFact}</div>
               </div>
             </div>
           </div>
