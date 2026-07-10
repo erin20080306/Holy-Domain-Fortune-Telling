@@ -4,6 +4,53 @@ import { PLAN_LABEL, type PlanId } from '@shared/plans';
 import { api } from '../lib/api';
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'manual_active']);
+const SUBSCRIPTION_STATUS_LABEL: Record<string, string> = {
+  none: '未訂閱',
+  pending: '付款確認中',
+  active: '已付款訂閱',
+  manual_active: '後台手動開通',
+  cancelled: '已取消',
+  expired: '已到期',
+  suspended: '已暫停',
+};
+
+const SUBSCRIPTION_STATUS_HELP: Record<string, string> = {
+  none: '沒有付費權限，視為免費會員。',
+  pending: '付款或資料確認中，暫不視為已訂閱。',
+  active: '由付款流程啟用的有效訂閱。',
+  manual_active: '管理員在後台手動開通，通常用於補單、測試或人工授權。',
+  cancelled: '會員或系統已取消訂閱，暫不視為有效訂閱。',
+  expired: '訂閱已過期，暫不視為有效訂閱。',
+  suspended: '訂閱暫停中，暫不視為有效訂閱。',
+};
+
+const SUBSCRIPTION_SOURCE_LABEL: Record<string, string> = {
+  free: '免費',
+  paypal: 'PayPal',
+  apple_iap: 'Apple 內購',
+  google_play: 'Google Play',
+  admin_manual: '後台手動',
+};
+
+const SUBSCRIPTION_STATUS_OPTIONS = [
+  'none',
+  'pending',
+  'active',
+  'manual_active',
+  'cancelled',
+  'expired',
+  'suspended',
+];
+
+function formatStatusLabel(status: string | null | undefined): string {
+  if (!status) return '未訂閱（none）';
+  return `${SUBSCRIPTION_STATUS_LABEL[status] ?? status}（${status}）`;
+}
+
+function formatSourceLabel(source: string | null | undefined): string {
+  if (!source) return '免費（free）';
+  return `${SUBSCRIPTION_SOURCE_LABEL[source] ?? source}（${source}）`;
+}
 
 function isUserSubscribed(user: any): boolean {
   if (user?.plan === 'free' || !ACTIVE_SUBSCRIPTION_STATUSES.has(user?.status)) return false;
@@ -246,8 +293,8 @@ export function AdminDashboard() {
                   ['方案', PLAN_LABEL[(u.plan ?? 'free') as PlanId]],
                   ['訂閱', isUserSubscribed(u) ? '已訂閱' : '未訂閱'],
                   ['到期日', formatTaipeiDate(u.current_period_end)],
-                  ['狀態', u.status],
-                  ['來源', u.source],
+                  ['狀態', formatStatusLabel(u.status)],
+                  ['來源', formatSourceLabel(u.source)],
                   ['電話', u.phone ?? '—'],
                   ['短解讀', String(u.short_reading_used ?? 0)],
                   ['報告', String(u.premium_report_used ?? 0)],
@@ -436,14 +483,15 @@ function EditUserModal({
             if (active) setPeriodEndDate((current) => current || addDaysToPeriodEnd('', 30));
           }}
         >
-          {['none', 'pending', 'active', 'manual_active', 'cancelled', 'expired', 'suspended'].map(
-            (s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ),
-          )}
+          {SUBSCRIPTION_STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {formatStatusLabel(s)}
+            </option>
+          ))}
         </select>
+        <p className="muted" style={{ marginTop: -8, fontSize: 12 }}>
+          {SUBSCRIPTION_STATUS_HELP[status] ?? '請依實際訂閱狀態選擇。'}
+        </p>
 
         <label className="label">訂閱到期日</label>
         <input
