@@ -9,7 +9,7 @@ export interface ProviderResult {
   outputTokens: number;
 }
 
-const TIMEOUT_MS = 25_000;
+const TIMEOUT_MS = 55_000;
 
 async function withTimeout<T>(p: Promise<T>): Promise<T> {
   const ctrl = new AbortController();
@@ -38,7 +38,7 @@ export async function callGemini(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: [{ text: user }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 2048 },
+        generationConfig: { temperature: 0.85, maxOutputTokens: 8192 },
       }),
     }),
   );
@@ -76,7 +76,7 @@ export async function callClaude(
       },
       body: JSON.stringify({
         model,
-        max_tokens: 3000,
+        max_tokens: 8192,
         temperature: 0.8,
         system,
         messages: [{ role: 'user', content: user }],
