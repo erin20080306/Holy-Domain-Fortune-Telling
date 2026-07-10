@@ -32,6 +32,7 @@ interface AuthState {
   }) => Promise<{ error?: string }>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   updatePassword: (password: string) => Promise<{ error?: string }>;
+  verifyPassword: (password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -139,6 +140,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: '密碼更新失敗，請稍後再試。' };
   }, []);
 
+  const verifyPassword = useCallback(async (password: string) => {
+    const email = session?.user.email;
+    if (!email || !password) return { error: '請輸入目前密碼。' };
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) return {};
+    return { error: '目前密碼不正確，無法刪除帳號。' };
+  }, [session]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     // Clear local PWA scratch on logout.
@@ -163,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         resetPassword,
         updatePassword,
+        verifyPassword,
         signOut,
       }}
     >

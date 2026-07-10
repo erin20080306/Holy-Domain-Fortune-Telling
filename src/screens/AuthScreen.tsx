@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
 import { useAuth } from '../state/AuthContext';
 import { setAdminSession } from '../lib/adminSession';
@@ -196,6 +196,12 @@ export function AuthScreen() {
           </p>
         )}
       </div>
+      <p className="mt-7 text-center text-[11px] font-light leading-6 tracking-wide text-white/35">
+        繼續使用代表你同意
+        <Link className="mx-1 text-[#A89882]/80" to="/terms">服務條款</Link>
+        與
+        <Link className="ml-1 text-[#A89882]/80" to="/privacy">隱私政策</Link>
+      </p>
     </div>
   );
 }

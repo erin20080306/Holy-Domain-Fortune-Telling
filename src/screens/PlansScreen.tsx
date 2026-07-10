@@ -140,7 +140,7 @@ export function PlansScreen() {
           <span className="opacity-70">REPORT CONTENTS</span>
         </p>
         <p className="text-slate-400 text-xs font-light tracking-wider mb-5">
-          每份{DEEP_REPORT_LENGTH_LABEL}，依你選擇的命理項目與提供的資料撰寫，涵蓋以下八大面向：
+          每份{DEEP_REPORT_LENGTH_LABEL}，目前支援八字、紫微、生肖與生命靈數，並依系統排盤資料撰寫以下八大面向：
         </p>
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-300 font-light tracking-wider">
           {DEEP_REPORT_SECTIONS.map((s, i) => (
@@ -161,6 +161,10 @@ export function PlansScreen() {
       </div>
 
       <ContactForm />
+      <div className="mt-8 flex justify-center gap-5 text-xs tracking-wide">
+        <button type="button" className="text-[#A89882]/80" onClick={() => nav('/terms')}>服務條款</button>
+        <button type="button" className="text-[#A89882]/80" onClick={() => nav('/privacy')}>隱私政策</button>
+      </div>
     </div>
   );
 }

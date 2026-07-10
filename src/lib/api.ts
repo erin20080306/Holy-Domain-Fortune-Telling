@@ -35,6 +35,11 @@ export const api = {
       method: 'DELETE',
       body: JSON.stringify({ reading_id: readingId }),
     }),
+  deleteAccount: () =>
+    request<any>('/api/me/delete-account', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: 'DELETE' }),
+    }),
   bootstrap: (body: { display_name?: string; phone?: string }) =>
     request<any>('/api/me/bootstrap', { method: 'POST', body: JSON.stringify(body) }),
   createCheckout: (plan: string) =>

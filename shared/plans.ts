@@ -87,7 +87,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     title: '星河行者',
     price: 'NT$99 / 月',
     features: [
-      `每月 2 份${DEEP_REPORT_LENGTH_LABEL}深度命理報告`,
+      `每月 2 份${DEEP_REPORT_LENGTH_LABEL}深度命理報告（八字／紫微／生肖／靈數）`,
       '每月 30 次命理短解讀',
       '每月 30 次塔羅神諭短讀（80–150 字）',
       '每月 30 則命盤／報告追問對話',
@@ -102,7 +102,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     title: '宇宙共鳴',
     price: 'NT$299 / 月',
     features: [
-      `每月 8 份${DEEP_REPORT_LENGTH_LABEL}深度命理報告`,
+      `每月 8 份${DEEP_REPORT_LENGTH_LABEL}深度命理報告（八字／紫微／生肖／靈數）`,
       '每月 100 次命理短解讀',
       '每月 50 次塔羅神諭短讀（80–150 字）',
       '每月 150 則命盤／報告追問對話',

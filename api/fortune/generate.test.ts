@@ -89,6 +89,9 @@ describe('fortune generation quota enforcement', () => {
         JSON.stringify({
           usage_type: 'short_reading',
           category: 'bazi',
+          birth_date: '1983-06-08',
+          birth_time: '03:30',
+          gender: '女',
           __from_cache: true,
         }),
       ),
@@ -106,7 +109,13 @@ describe('fortune generation quota enforcement', () => {
 
   it('rejects a concurrent request when the atomic reservation is exhausted', async () => {
     vi.mocked(readRawBody).mockResolvedValue(
-      Buffer.from(JSON.stringify({ usage_type: 'short_reading', category: 'bazi' })),
+      Buffer.from(JSON.stringify({
+        usage_type: 'short_reading',
+        category: 'bazi',
+        birth_date: '1983-06-08',
+        birth_time: '03:30',
+        gender: '女',
+      })),
     );
     vi.mocked(reserveUsage).mockResolvedValue('exhausted');
     const req = { method: 'POST', headers: {} } as any;
@@ -122,7 +131,13 @@ describe('fortune generation quota enforcement', () => {
 
   it('releases an atomic reservation when content generation fails', async () => {
     vi.mocked(readRawBody).mockResolvedValue(
-      Buffer.from(JSON.stringify({ usage_type: 'short_reading', category: 'bazi' })),
+      Buffer.from(JSON.stringify({
+        usage_type: 'short_reading',
+        category: 'bazi',
+        birth_date: '1983-06-08',
+        birth_time: '03:30',
+        gender: '女',
+      })),
     );
     vi.mocked(reserveUsage).mockResolvedValue('reserved');
     vi.mocked(generateReading).mockResolvedValue(null);
@@ -134,5 +149,25 @@ describe('fortune generation quota enforcement', () => {
     expect(releaseUsage).toHaveBeenCalledWith('user-1', 'short_reading', '2026-07');
     expect(incrementUsage).not.toHaveBeenCalled();
     expect(res.body).toMatchObject({ ok: false, message: 'busy' });
+  });
+
+  it('rejects unsupported deep reports before checking or spending quota', async () => {
+    vi.mocked(readRawBody).mockResolvedValue(
+      Buffer.from(JSON.stringify({
+        usage_type: 'premium_report',
+        category: 'astro',
+        birth_date: '1983-06-08',
+        birth_time: '03:30',
+        birth_place: '台北市',
+      })),
+    );
+    const req = { method: 'POST', headers: {} } as any;
+    const res = {} as any;
+
+    await handler(req, res);
+
+    expect(getOrCreateQuota).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toMatchObject({ ok: false, reason: 'invalid_input' });
   });
 });

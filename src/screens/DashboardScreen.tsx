@@ -6,7 +6,8 @@ import { FORTUNE_CATEGORIES } from '@shared/categories';
 import { formatChineseBirthHour, formatChineseBirthHourInline } from '@shared/chineseTime';
 import { buildFortuneChartData } from '@shared/fortuneChart';
 import { formatLunarDateForPrompt } from '@shared/lunarCalendar';
-import { PLAN_DISPLAY, PLAN_LABEL, type PlanId } from '@shared/plans';
+import { PLAN_DISPLAY, PLAN_LABEL, type PlanId, type UsageType } from '@shared/plans';
+import { validateReadingRequirements } from '@shared/readingRequirements';
 import { useAuth } from '../state/AuthContext';
 import { api } from '../lib/api';
 import { beginPaypalCheckout } from '../lib/checkout';
@@ -200,6 +201,22 @@ function composeBirthDate(year: string, month: string, day: string): string | un
 function formatSolarDateForDisplay(solarDate: string): string {
   const [year, month, day] = solarDate.split('-').map(Number);
   return `${year}年${month}月${day}日`;
+}
+
+function questionPlaceholder(categoryId: string): string {
+  switch (categoryId) {
+    case 'tarot':
+    case 'iching':
+      return '請輸入一個具體問題，例如：未來三個月轉職是否合適？';
+    case 'face':
+      return '請描述額頭、眉眼、鼻形、嘴型或下巴等特徵，以及想了解的問題。';
+    case 'palm':
+      return '請描述生命線、智慧線、感情線或事業線的長短、深淺與分岔。';
+    case 'fengshui':
+      return '請描述住宅坐向、房間用途、床位／書桌位置、採光與目前困擾。';
+    default:
+      return '想詢問的問題（選填，例如：近期的事業發展如何？）';
+  }
 }
 
 function usageLabel(usageType: string): string {
@@ -783,6 +800,7 @@ export function DashboardScreen() {
   const [resultKind, setResultKind] = useState<ResultKind>(null);
   const [busy, setBusy] = useState(false);
   const [busyType, setBusyType] = useState<string | null>(null);
+  const [inputError, setInputError] = useState('');
 
   const [question, setQuestion] = useState('');
   const [fullName, setFullName] = useState('');
@@ -856,6 +874,7 @@ export function DashboardScreen() {
     setResult('');
     setResultKind(null);
     setSavedReadingId(null);
+    setInputError('');
   };
 
   const openSavedReading = (reading: SavedReading) => {
@@ -895,17 +914,32 @@ export function DashboardScreen() {
     }
   }, [birthDay, birthDayMax]);
 
-  const draw = async (usageType: string) => {
+  const draw = async (usageType: UsageType) => {
     if (!selectedCat) return;
     const nextResultKind: ResultKind =
       usageType === 'premium_report' ? 'premium' : usageType === 'tarot' ? 'tarot' : 'short';
 
     if (hasPartialBirthDate && !composedBirthDate) {
-      setResultKind(null);
-      setResult('請輸入完整且有效的出生年月日。');
+      setInputError('請輸入完整且有效的出生年月日。');
       return;
     }
 
+    const validationMessage = validateReadingRequirements({
+      usage: usageType,
+      category: selectedCat.id,
+      question,
+      name: fullName,
+      gender,
+      birthDate: composedBirthDate,
+      birthTime,
+      birthPlace,
+    });
+    if (validationMessage) {
+      setInputError(validationMessage);
+      return;
+    }
+
+    setInputError('');
     setBusy(true);
     setBusyType(usageType);
     setResultKind(nextResultKind);
@@ -970,6 +1004,15 @@ export function DashboardScreen() {
                 <Icons.ArrowRight size={14} className="text-white/20 group-hover:text-[#A89882] -rotate-45 transition-all duration-500" />
               </div>
               <div className="relative z-10 mt-auto">
+                <span className={`mb-2 inline-flex rounded-full border px-2 py-1 text-[9px] tracking-[0.12em] ${
+                  cat.calculationLevel === 'engine'
+                    ? 'border-emerald-300/25 bg-emerald-300/[0.06] text-emerald-200'
+                    : cat.calculationLevel === 'draw'
+                      ? 'border-rose-300/25 bg-rose-300/[0.06] text-rose-200'
+                      : 'border-white/10 bg-white/[0.03] text-white/50'
+                }`}>
+                  {cat.calculationLabel}
+                </span>
                 <h3 className="text-base font-light text-slate-100 tracking-widest mb-1">{cat.name}</h3>
                 <p className="text-[10px] leading-4 text-[#A89882]/80 font-semibold tracking-[0.08em] break-words">{cat.subtitle}</p>
               </div>
@@ -983,6 +1026,9 @@ export function DashboardScreen() {
           <div className="flex items-center gap-3 mb-2">
             <span className="text-sm text-white tracking-widest font-light">{selectedCat.name}</span>
             <span className="text-[9px] text-[#A89882]/60 tracking-widest mt-0.5">{selectedCat.subtitle}</span>
+            <span className="ml-auto rounded-full border border-white/10 px-2 py-1 text-[9px] tracking-wider text-white/55">
+              {selectedCat.calculationLabel}
+            </span>
           </div>
           <p className="text-slate-400 text-xs font-light tracking-wider mb-6">{selectedCat.desc}</p>
 
@@ -991,7 +1037,7 @@ export function DashboardScreen() {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               rows={2}
-              placeholder="想詢問的問題（選填，例如：近期的事業發展如何？）"
+              placeholder={questionPlaceholder(selectedCat.id)}
               className="w-full bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 resize-none"
             />
 
@@ -1122,7 +1168,9 @@ export function DashboardScreen() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">性別（選填）</span>
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">
+                    性別{['bazi', 'ziwei'].includes(selectedCat.id) ? '（完整排盤必填）' : '（選填）'}
+                  </span>
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
@@ -1165,6 +1213,12 @@ export function DashboardScreen() {
               </p>
             </div>
 
+            {inputError && (
+              <div role="alert" className="rounded-2xl border border-[#e0a97a]/30 bg-[#e0a97a]/5 px-4 py-3 text-sm leading-7 text-[#e0a97a]">
+                {inputError}
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => void draw(selectedCat.id === 'tarot' ? 'tarot' : 'short_reading')}
@@ -1180,11 +1234,17 @@ export function DashboardScreen() {
               </button>
               <button
                 onClick={() => void draw('premium_report')}
-                disabled={busy}
+                disabled={busy || !selectedCat.supportsDeepReport}
                 className="flex-1 py-4 bg-transparent border border-[#A89882]/60 text-[#A89882] font-medium tracking-[0.2em] rounded-full hover:bg-[#A89882] hover:text-[#050508] transition-all flex justify-center items-center gap-2 disabled:opacity-60"
               >
-                {busy && busyType === 'premium_report' ? '報告生成中…' : '深度報告'}
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#A89882]/20 tracking-widest">PRO</span>
+                {busy && busyType === 'premium_report'
+                  ? '報告生成中…'
+                  : selectedCat.supportsDeepReport
+                    ? '深度報告'
+                    : '尚未支援完整排盤報告'}
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#A89882]/20 tracking-widest">
+                  {selectedCat.supportsDeepReport ? 'PRO' : '指引版'}
+                </span>
               </button>
             </div>
           </div>

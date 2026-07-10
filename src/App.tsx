@@ -43,6 +43,12 @@ const AdminDashboard = lazy(() =>
 const AuditLogScreen = lazy(() =>
   import('./screens/AuditLogScreen').then((module) => ({ default: module.AuditLogScreen })),
 );
+const PrivacyScreen = lazy(() =>
+  import('./screens/LegalScreens').then((module) => ({ default: module.PrivacyScreen })),
+);
+const TermsScreen = lazy(() =>
+  import('./screens/LegalScreens').then((module) => ({ default: module.TermsScreen })),
+);
 
 function RouteLoading() {
   return (
@@ -116,6 +122,22 @@ function Shell() {
           element={
             <SplitLayout showBack>
               <PlansScreen />
+            </SplitLayout>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <SplitLayout showBack compactGuide>
+              <PrivacyScreen />
+            </SplitLayout>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <SplitLayout showBack compactGuide>
+              <TermsScreen />
             </SplitLayout>
           }
         />

@@ -15,6 +15,7 @@ import { USER_MESSAGES } from '../../shared/productCopy.js';
 import type { PlanId, UsageType } from '../../shared/plans.js';
 import { generateReading } from '../_lib/ai/generateReading.js';
 import { saveDeepReport } from '../_lib/services/ReadingHistoryRepository.js';
+import { validateReadingRequirements } from '../../shared/readingRequirements.js';
 
 const ALLOWED: UsageType[] = ['short_reading', 'premium_report', 'premium_chat', 'tarot'];
 
@@ -50,6 +51,25 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const body = raw.length ? JSON.parse(raw.toString('utf8')) : {};
   const usage = body.usage_type as UsageType;
   if (!ALLOWED.includes(usage)) return sendJson(res, 400, { ok: false });
+  if (usage !== 'premium_chat') {
+    const validationMessage = validateReadingRequirements({
+      usage,
+      category: typeof body.category === 'string' ? body.category : undefined,
+      question: typeof body.question === 'string' ? body.question : undefined,
+      name: typeof body.name === 'string' ? body.name : undefined,
+      gender: typeof body.gender === 'string' ? body.gender : undefined,
+      birthDate: typeof body.birth_date === 'string' ? body.birth_date : undefined,
+      birthTime: typeof body.birth_time === 'string' ? body.birth_time : undefined,
+      birthPlace: typeof body.birth_place === 'string' ? body.birth_place : undefined,
+    });
+    if (validationMessage) {
+      return sendJson(res, 400, {
+        ok: false,
+        reason: 'invalid_input',
+        message: validationMessage,
+      });
+    }
+  }
   let usageBucket = getUsageBucketKey(usage);
   let effectiveUserPlan: PlanId = 'free';
 
