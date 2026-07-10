@@ -6,7 +6,53 @@ import { api } from '../lib/api';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'manual_active']);
 
 function isUserSubscribed(user: any): boolean {
-  return user?.plan !== 'free' && ACTIVE_SUBSCRIPTION_STATUSES.has(user?.status);
+  if (user?.plan === 'free' || !ACTIVE_SUBSCRIPTION_STATUSES.has(user?.status)) return false;
+  if (!user?.current_period_end) return true;
+  const expiresAt = Date.parse(user.current_period_end);
+  return !Number.isFinite(expiresAt) || expiresAt > Date.now();
+}
+
+function formatTaipeiDate(value: string | null | undefined): string {
+  if (!value) return '無到期日';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function isoToTaipeiDateInput(value: string | null | undefined): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function taipeiEndOfDayIso(dateInput: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) return null;
+  const date = new Date(`${dateInput}T23:59:59+08:00`);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function addDaysToPeriodEnd(currentDateInput: string, days: number): string {
+  const currentIso = currentDateInput ? taipeiEndOfDayIso(currentDateInput) : null;
+  const current = currentIso ? new Date(currentIso) : null;
+  const base =
+    current && current.getTime() > Date.now()
+      ? current
+      : new Date(`${isoToTaipeiDateInput(new Date().toISOString())}T23:59:59+08:00`);
+  const next = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+  return isoToTaipeiDateInput(next.toISOString());
 }
 
 export function AdminDashboard() {
@@ -126,6 +172,7 @@ export function AdminDashboard() {
                 <th>訂閱</th>
                 <th>來源</th>
                 <th>狀態</th>
+                <th>到期日</th>
                 <th>短解讀</th>
                 <th>報告</th>
                 <th>登入</th>
@@ -144,6 +191,7 @@ export function AdminDashboard() {
                   <td>{isUserSubscribed(u) ? '已訂閱' : '未訂閱'}</td>
                   <td>{u.source}</td>
                   <td>{u.status}</td>
+                  <td>{formatTaipeiDate(u.current_period_end)}</td>
                   <td>{u.short_reading_used}</td>
                   <td>{u.premium_report_used}</td>
                   <td>{u.login_count}</td>
@@ -217,6 +265,7 @@ function EditUserModal({
   const [plan, setPlan] = useState<PlanId>((user.plan ?? 'free') as PlanId);
   const [status, setStatus] = useState(user.status ?? 'none');
   const [subscribed, setSubscribed] = useState(isUserSubscribed(user));
+  const [periodEndDate, setPeriodEndDate] = useState(isoToTaipeiDateInput(user.current_period_end));
   const [note, setNote] = useState('');
   const [resetUsage, setResetUsage] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -228,6 +277,7 @@ function EditUserModal({
     await api.admin.updateSubscription(user.user_id, {
       plan: subscribed ? (plan === 'free' ? 'pro_monthly' : plan) : 'free',
       status: subscribed ? status : 'none',
+      current_period_end: subscribed && periodEndDate ? taipeiEndOfDayIso(periodEndDate) : null,
       admin_note: note,
       reset_month_usage: resetUsage,
     });
@@ -248,9 +298,11 @@ function EditUserModal({
     if (checked) {
       setPlan((current) => (current === 'free' ? 'pro_monthly' : current));
       setStatus('manual_active');
+      setPeriodEndDate((current) => current || addDaysToPeriodEnd('', 30));
     } else {
       setPlan('free');
       setStatus('none');
+      setPeriodEndDate('');
     }
   };
 
@@ -262,7 +314,13 @@ function EditUserModal({
     } else {
       setSubscribed(true);
       if (!ACTIVE_SUBSCRIPTION_STATUSES.has(status)) setStatus('manual_active');
+      setPeriodEndDate((current) => current || addDaysToPeriodEnd('', 30));
     }
+  };
+
+  const extendPeriod = (days: number) => {
+    if (!subscribed) updateSubscribed(true);
+    setPeriodEndDate((current) => addDaysToPeriodEnd(current, days));
   };
 
   return (
@@ -308,7 +366,9 @@ function EditUserModal({
           value={status}
           onChange={(e) => {
             setStatus(e.target.value);
-            setSubscribed(ACTIVE_SUBSCRIPTION_STATUSES.has(e.target.value));
+            const active = ACTIVE_SUBSCRIPTION_STATUSES.has(e.target.value);
+            setSubscribed(active);
+            if (active) setPeriodEndDate((current) => current || addDaysToPeriodEnd('', 30));
           }}
         >
           {['none', 'pending', 'active', 'manual_active', 'cancelled', 'expired', 'suspended'].map(
@@ -319,6 +379,40 @@ function EditUserModal({
             ),
           )}
         </select>
+
+        <label className="label">訂閱到期日</label>
+        <input
+          className="field"
+          type="date"
+          value={periodEndDate}
+          disabled={!subscribed}
+          onChange={(e) => setPeriodEndDate(e.target.value)}
+        />
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+          {[30, 90, 365].map((days) => (
+            <button
+              key={days}
+              className="btn ghost"
+              style={{ width: 'auto', padding: '8px 12px' }}
+              type="button"
+              onClick={() => extendPeriod(days)}
+            >
+              +{days === 365 ? '1年' : `${days}天`}
+            </button>
+          ))}
+          <button
+            className="btn ghost"
+            style={{ width: 'auto', padding: '8px 12px' }}
+            type="button"
+            disabled={!subscribed}
+            onClick={() => setPeriodEndDate('')}
+          >
+            不設到期
+          </button>
+        </div>
+        <p className="muted" style={{ marginTop: -4, fontSize: 12 }}>
+          到期日以台灣時間當日 23:59:59 為準；留空表示手動開通不限期。
+        </p>
         <label className="label">管理員備註</label>
         <input className="field" value={note} onChange={(e) => setNote(e.target.value)} />
         <label className="row" style={{ gap: 8, marginBottom: 14 }}>

@@ -17,7 +17,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       getOrCreateQuota(user.userId, sub.plan, getUsageBucketKey('short_reading')),
       getOrCreateQuota(user.userId, sub.plan, getUsageBucketKey('tarot')),
     ]);
-    const plan = effectivePlan(sub.plan, sub.status);
+    const plan = effectivePlan(sub.plan, sub.status, sub.current_period_end);
     const limits = planLimitsFromEnv()[plan];
 
     return sendJson(res, 200, {

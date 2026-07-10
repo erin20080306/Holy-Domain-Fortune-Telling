@@ -65,6 +65,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       plan: s?.plan ?? 'free',
       source: s?.source ?? 'free',
       status: s?.status ?? 'none',
+      current_period_end: s?.current_period_end ?? null,
       short_reading_used: u?.free_ai_count ?? 0,
       premium_report_used: u?.premium_report_count ?? 0,
       premium_chat_used: u?.premium_chat_count ?? 0,

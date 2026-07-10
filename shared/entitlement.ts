@@ -27,8 +27,13 @@ export interface EntitlementResult {
 export function effectivePlan(
   plan: PlanId,
   status: SubscriptionStatus,
+  currentPeriodEnd?: string | null,
 ): PlanId {
   const activeStatuses: SubscriptionStatus[] = ['active', 'manual_active'];
+  if (currentPeriodEnd) {
+    const expiresAt = Date.parse(currentPeriodEnd);
+    if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) return 'free';
+  }
   if (plan !== 'free' && activeStatuses.includes(status)) return plan;
   return 'free';
 }
@@ -58,10 +63,11 @@ export function checkEntitlement(params: {
   status: SubscriptionStatus;
   usage: UsageType;
   used: number;
+  currentPeriodEnd?: string | null;
   limits?: Record<PlanId, PlanLimits>;
 }): EntitlementResult {
   const table = params.limits ?? DEFAULT_PLAN_LIMITS;
-  const plan = effectivePlan(params.plan, params.status);
+  const plan = effectivePlan(params.plan, params.status, params.currentPeriodEnd);
   const limit = limitForUsage(table[plan], params.usage);
   const used = Math.max(0, params.used);
   const remaining = limit === Number.POSITIVE_INFINITY ? Infinity : limit - used;

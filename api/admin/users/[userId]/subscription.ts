@@ -44,7 +44,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (!VALID_STATUS.includes(body.status)) return sendJson(res, 400, { ok: false });
     patch.status = body.status;
   }
-  if (body.current_period_end) patch.current_period_end = body.current_period_end;
+  if ('current_period_end' in body) {
+    if (body.current_period_end === null || body.current_period_end === '') {
+      patch.current_period_end = null;
+    } else if (
+      typeof body.current_period_end === 'string' &&
+      Number.isFinite(Date.parse(body.current_period_end))
+    ) {
+      patch.current_period_end = body.current_period_end;
+    } else {
+      return sendJson(res, 400, { ok: false });
+    }
+  }
   if (typeof body.admin_note === 'string') patch.admin_note = body.admin_note;
 
   const before = await getSubscription(targetUserId);

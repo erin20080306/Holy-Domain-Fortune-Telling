@@ -8,6 +8,11 @@ describe('effectivePlan', () => {
     expect(effectivePlan('master_monthly', 'active')).toBe('master_monthly');
     expect(effectivePlan('pro_monthly', 'manual_active')).toBe('pro_monthly');
   });
+
+  it('downgrades active paid plans after current period end', () => {
+    expect(effectivePlan('pro_monthly', 'manual_active', '2000-01-01T00:00:00.000Z')).toBe('free');
+    expect(effectivePlan('pro_monthly', 'manual_active', '2999-01-01T00:00:00.000Z')).toBe('pro_monthly');
+  });
 });
 
 describe('checkEntitlement - premium reports', () => {

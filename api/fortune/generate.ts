@@ -62,6 +62,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       gate = checkEntitlement({
         plan: sub.plan,
         status: sub.status,
+        currentPeriodEnd: sub.current_period_end,
         usage,
         used: usedCount(quota, usage),
         limits: planLimitsFromEnv(),
