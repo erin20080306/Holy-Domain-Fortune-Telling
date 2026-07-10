@@ -87,7 +87,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (!gate.allowed) {
       const message =
         gate.reason === 'plan_required' ? USER_MESSAGES.planRequired : USER_MESSAGES.quotaExhausted;
-      return sendJson(res, 403, { ok: false, message, remaining: 0 });
+      return sendJson(res, 403, {
+        ok: false,
+        message,
+        reason: gate.reason,
+        limit: gate.limit,
+        used: gate.used,
+        remaining: 0,
+      });
     }
   }
 

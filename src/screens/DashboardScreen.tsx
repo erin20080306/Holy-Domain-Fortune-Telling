@@ -138,6 +138,36 @@ function formatSolarDateForDisplay(solarDate: string): string {
   return `${year}年${month}月${day}日`;
 }
 
+function usageLabel(usageType: string): string {
+  switch (usageType) {
+    case 'premium_report':
+      return '深度報告';
+    case 'premium_chat':
+      return '命理老師對話';
+    case 'tarot':
+      return '塔羅解讀';
+    default:
+      return '命理短解讀';
+  }
+}
+
+function formatGenerateError(res: any, usageType: string): string {
+  const label = usageLabel(usageType);
+  const used = Number(res?.used);
+  const limit = Number(res?.limit);
+  const hasQuotaNumbers = Number.isFinite(used) && Number.isFinite(limit);
+
+  if (res?.reason === 'quota_exhausted' && hasQuotaNumbers) {
+    return `本月${label}額度已用完（已用 ${used} / 每月 ${limit} 次）。請下個月再使用，或至方案頁升級／調整方案。`;
+  }
+
+  if (res?.reason === 'plan_required') {
+    return `${label}需要有效訂閱方案才能使用。若後台已手動開通，請確認方案、狀態與到期日仍有效。`;
+  }
+
+  return res?.message ?? '目前服務暫時無法使用，請稍後再試。';
+}
+
 function reportHeading(line: string): string | null {
   const trimmed = line.trim();
   const bracket = /^【(.{2,24})】$/.exec(trimmed);
@@ -470,8 +500,8 @@ export function DashboardScreen() {
       if (res?.ok) {
         setResult(res.content);
       } else {
-        const base = res?.message ?? '目前服務暫時無法使用，請稍後再試。';
-        setResult(res?.debug ? `${base}\n\n[debug] ${res.debug}` : base);
+        const base = formatGenerateError(res, usageType);
+        setResult(isAdmin && res?.debug ? `${base}\n\n[debug] ${res.debug}` : base);
       }
     } catch {
       setResult('目前服務暫時無法使用，請稍後再試。');

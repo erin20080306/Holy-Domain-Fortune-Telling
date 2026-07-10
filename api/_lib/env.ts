@@ -7,6 +7,10 @@ function num(key: string, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function numAtLeast(key: string, fallback: number): number {
+  return Math.max(fallback, num(key, fallback));
+}
+
 function bool(key: string, fallback = false): boolean {
   const v = process.env[key];
   if (v === undefined) return fallback;
@@ -70,22 +74,22 @@ export const serverEnv = {
 export function planLimitsFromEnv(): Record<PlanId, PlanLimits> {
   return {
     free: {
-      shortAiPerMonth: num('PLAN_FREE_SHORT_AI_LIMIT', 3),
+      shortAiPerMonth: numAtLeast('PLAN_FREE_SHORT_AI_LIMIT', 3),
       premiumReportPerMonth: 0,
       premiumChatPerMonth: 0,
-      tarotPerDay: 1,
+      tarotPerDay: numAtLeast('PLAN_FREE_TAROT_DAILY_LIMIT', 1),
     },
     pro_monthly: {
-      shortAiPerMonth: num('PLAN_PRO_SHORT_AI_LIMIT', 30),
-      premiumReportPerMonth: num('PLAN_PRO_PREMIUM_REPORT_LIMIT', 2),
-      premiumChatPerMonth: num('PLAN_PRO_CHAT_LIMIT', 30),
-      tarotPerDay: 99,
+      shortAiPerMonth: numAtLeast('PLAN_PRO_SHORT_AI_LIMIT', 30),
+      premiumReportPerMonth: numAtLeast('PLAN_PRO_PREMIUM_REPORT_LIMIT', 2),
+      premiumChatPerMonth: numAtLeast('PLAN_PRO_CHAT_LIMIT', 30),
+      tarotPerDay: numAtLeast('PLAN_PRO_TAROT_DAILY_LIMIT', 99),
     },
     master_monthly: {
-      shortAiPerMonth: num('PLAN_MASTER_SHORT_AI_LIMIT', 100),
-      premiumReportPerMonth: num('PLAN_MASTER_PREMIUM_REPORT_LIMIT', 8),
-      premiumChatPerMonth: num('PLAN_MASTER_CHAT_LIMIT', 150),
-      tarotPerDay: 99,
+      shortAiPerMonth: numAtLeast('PLAN_MASTER_SHORT_AI_LIMIT', 100),
+      premiumReportPerMonth: numAtLeast('PLAN_MASTER_PREMIUM_REPORT_LIMIT', 8),
+      premiumChatPerMonth: numAtLeast('PLAN_MASTER_CHAT_LIMIT', 150),
+      tarotPerDay: numAtLeast('PLAN_MASTER_TAROT_DAILY_LIMIT', 99),
     },
   };
 }

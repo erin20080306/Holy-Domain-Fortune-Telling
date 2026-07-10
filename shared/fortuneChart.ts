@@ -1,19 +1,19 @@
-import { formatChineseBirthHour, getChineseBirthHour } from './chineseTime';
-import { formatLunarDateForPrompt, solarToLunar } from './lunarCalendar';
+import { formatChineseBirthHour, getChineseBirthHour } from './chineseTime.js';
+import { formatLunarDateForPrompt, solarToLunar } from './lunarCalendar.js';
 import {
   buildBaziChart,
   formatBaziDetails,
   formatBaziPillars,
   formatBaziWuXing,
   type BaziChart,
-} from './baziChart';
+} from './baziChart.js';
 import {
   buildZiweiChart,
   findZiweiPalace,
   formatZiweiDetails,
   formatZiweiPalaceSummary,
   type ZiweiChart,
-} from './ziweiChart';
+} from './ziweiChart.js';
 
 export interface FortuneChartInput {
   category?: string;

@@ -11,11 +11,11 @@ export interface ProviderResult {
 
 const TIMEOUT_MS = 55_000;
 
-async function withTimeout<T>(p: Promise<T>): Promise<T> {
+async function fetchWithTimeout(input: string | URL, init: RequestInit): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    return await p;
+    return await fetch(input, { ...init, signal: ctrl.signal });
   } finally {
     clearTimeout(t);
   }
@@ -31,17 +31,15 @@ export async function callGemini(
     model,
   )}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  const res = await withTimeout(
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: user }] }],
-        generationConfig: { temperature: 0.85, maxOutputTokens: 8192 },
-      }),
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig: { temperature: 0.85, maxOutputTokens: 8192 },
     }),
-  );
+  });
 
   if (!res.ok) return null;
   const data: any = await res.json();
@@ -66,23 +64,21 @@ export async function callClaude(
   system: string,
   user: string,
 ): Promise<ProviderResult | null> {
-  const res = await withTimeout(
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 8192,
-        temperature: 0.8,
-        system,
-        messages: [{ role: 'user', content: user }],
-      }),
+  const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8192,
+      temperature: 0.8,
+      system,
+      messages: [{ role: 'user', content: user }],
     }),
-  );
+  });
 
   if (!res.ok) return null;
   const data: any = await res.json();
