@@ -465,44 +465,62 @@ export function DashboardScreen() {
               <div className="space-y-3">
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生日期</span>
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={birthYear}
-                      onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="1983"
-                      aria-label="出生西元年"
-                      className="w-full bg-black/40 border border-white/15 rounded-2xl px-3 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30"
-                    />
-                    <select
-                      value={birthMonth}
-                      onChange={(e) => setBirthMonth(e.target.value)}
-                      aria-label="出生月份"
-                      style={{ colorScheme: 'dark' }}
-                      className="w-full bg-black/40 border border-white/15 rounded-2xl px-3 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                    >
-                      <option value="">月</option>
-                      {MONTH_OPTIONS.map((month) => (
-                        <option key={month} value={month}>
-                          {month} 月
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={birthDay}
-                      onChange={(e) => setBirthDay(e.target.value)}
-                      aria-label="出生日"
-                      style={{ colorScheme: 'dark' }}
-                      className="w-full bg-black/40 border border-white/15 rounded-2xl px-3 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
-                    >
-                      <option value="">日</option>
-                      {DAY_OPTIONS.slice(0, birthDayMax).map((day) => (
-                        <option key={day} value={day}>
-                          {day} 日
-                        </option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">西元年</span>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={birthYear}
+                          onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                          placeholder="1983"
+                          aria-label="出生西元年"
+                          className="w-full bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30"
+                        />
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">年</span>
+                      </div>
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">月份</span>
+                      <div className="relative">
+                        <select
+                          value={birthMonth}
+                          onChange={(e) => setBirthMonth(e.target.value)}
+                          aria-label="出生月份"
+                          style={{ colorScheme: 'dark' }}
+                          className="w-full appearance-none bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                        >
+                          <option value="">選擇月份</option>
+                          {MONTH_OPTIONS.map((month) => (
+                            <option key={month} value={month}>
+                              {month} 月
+                            </option>
+                          ))}
+                        </select>
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">月</span>
+                      </div>
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[9px] text-white/45 tracking-[0.18em] pl-1">日期</span>
+                      <div className="relative">
+                        <select
+                          value={birthDay}
+                          onChange={(e) => setBirthDay(e.target.value)}
+                          aria-label="出生日"
+                          style={{ colorScheme: 'dark' }}
+                          className="w-full appearance-none bg-black/40 border border-white/15 rounded-2xl py-3 pl-4 pr-10 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                        >
+                          <option value="">選擇日期</option>
+                          {DAY_OPTIONS.slice(0, birthDayMax).map((day) => (
+                            <option key={day} value={day}>
+                              {day} 日
+                            </option>
+                          ))}
+                        </select>
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A89882]/80">日</span>
+                      </div>
+                    </label>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
