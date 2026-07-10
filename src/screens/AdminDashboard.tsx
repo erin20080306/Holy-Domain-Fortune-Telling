@@ -134,19 +134,52 @@ export function AdminDashboard() {
         {kpi(`$${stats?.estimated_cost_usd ?? 0}`, '預估成本 (USD)')}
       </div>
 
+      <div className="section-title">會員訂閱管理</div>
+      <div className="glass-card">
+        <p className="muted" style={{ marginTop: 0 }}>
+          選擇會員後可手動開通訂閱、調整方案與增加到期時間。若找不到會員，先用下方搜尋 email / 姓名 / 電話。
+        </p>
+        <div className="row" style={{ gap: 8, alignItems: 'stretch', flexWrap: 'wrap' }}>
+          <select
+            className="field"
+            style={{ margin: 0, minWidth: 220, flex: 1 }}
+            value={editing?.user_id ?? ''}
+            onChange={(e) => {
+              const user = users.find((u) => u.user_id === e.target.value);
+              if (user) setEditing(user);
+            }}
+          >
+            <option value="">選擇目前列表會員</option>
+            {users.map((u) => (
+              <option key={u.user_id} value={u.user_id}>
+                {u.email}｜{PLAN_LABEL[(u.plan ?? 'free') as PlanId]}｜{formatTaipeiDate(u.current_period_end)}
+              </option>
+            ))}
+          </select>
+          <button
+            className="btn"
+            style={{ width: 'auto', whiteSpace: 'nowrap' }}
+            disabled={!editing}
+            onClick={() => editing && setEditing(editing)}
+          >
+            編輯訂閱
+          </button>
+        </div>
+      </div>
+
       <div className="section-title">註冊者列表</div>
       <div className="glass-card">
-        <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+        <div className="row" style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
           <input
             className="field"
-            style={{ margin: 0 }}
+            style={{ margin: 0, minWidth: 220, flex: 1 }}
             placeholder="搜尋 email / 姓名 / 電話"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <select
             className="field"
-            style={{ margin: 0, width: 140 }}
+            style={{ margin: 0, width: 150 }}
             value={planFilter}
             onChange={(e) => setPlanFilter(e.target.value)}
           >
@@ -155,60 +188,84 @@ export function AdminDashboard() {
             <option value="pro_monthly">星河行者</option>
             <option value="master_monthly">宇宙共鳴</option>
           </select>
-          <button className="btn" style={{ width: 'auto' }} onClick={() => void load()}>
+          <button
+            className="btn"
+            style={{ width: 'auto', minWidth: 92, whiteSpace: 'nowrap' }}
+            onClick={() => void load()}
+          >
             搜尋
           </button>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>註冊日期</th>
-                <th>名稱</th>
-                <th>Email</th>
-                <th>電話</th>
-                <th>方案</th>
-                <th>訂閱</th>
-                <th>來源</th>
-                <th>狀態</th>
-                <th>到期日</th>
-                <th>短解讀</th>
-                <th>報告</th>
-                <th>登入</th>
-                <th>最後登入</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.user_id}>
-                  <td>{(u.created_at ?? '').slice(0, 10)}</td>
-                  <td>{u.display_name ?? '—'}</td>
-                  <td>{u.email}</td>
-                  <td>{u.phone ?? '—'}</td>
-                  <td>{PLAN_LABEL[(u.plan ?? 'free') as PlanId]}</td>
-                  <td>{isUserSubscribed(u) ? '已訂閱' : '未訂閱'}</td>
-                  <td>{u.source}</td>
-                  <td>{u.status}</td>
-                  <td>{formatTaipeiDate(u.current_period_end)}</td>
-                  <td>{u.short_reading_used}</td>
-                  <td>{u.premium_report_used}</td>
-                  <td>{u.login_count}</td>
-                  <td>{(u.last_login_at ?? '').slice(0, 16).replace('T', ' ')}</td>
-                  <td>
-                    <button
-                      className="btn ghost"
-                      style={{ width: 'auto', padding: '6px 12px' }}
-                      onClick={() => setEditing(u)}
-                    >
-                      開通/修改
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ display: 'grid', gap: 12 }}>
+          {users.map((u) => (
+            <div
+              key={u.user_id}
+              style={{
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 18,
+                padding: 14,
+                background: 'rgba(255,255,255,0.025)',
+              }}
+            >
+              <div
+                className="row"
+                style={{
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: '#fff', fontSize: 16, wordBreak: 'break-word' }}>
+                    {u.display_name ?? '未填姓名'}
+                  </div>
+                  <div className="muted" style={{ fontSize: 13, wordBreak: 'break-all', marginTop: 4 }}>
+                    {u.email}
+                  </div>
+                </div>
+                <button
+                  className="btn"
+                  style={{ width: 'auto', minWidth: 112, padding: '10px 14px', whiteSpace: 'nowrap' }}
+                  onClick={() => setEditing(u)}
+                >
+                  訂閱管理
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                  gap: 10,
+                }}
+              >
+                {[
+                  ['註冊日期', (u.created_at ?? '').slice(0, 10)],
+                  ['方案', PLAN_LABEL[(u.plan ?? 'free') as PlanId]],
+                  ['訂閱', isUserSubscribed(u) ? '已訂閱' : '未訂閱'],
+                  ['到期日', formatTaipeiDate(u.current_period_end)],
+                  ['狀態', u.status],
+                  ['來源', u.source],
+                  ['電話', u.phone ?? '—'],
+                  ['短解讀', String(u.short_reading_used ?? 0)],
+                  ['報告', String(u.premium_report_used ?? 0)],
+                  ['登入', String(u.login_count ?? 0)],
+                  ['最後登入', (u.last_login_at ?? '').slice(0, 16).replace('T', ' ') || '—'],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <div className="muted" style={{ fontSize: 11, marginBottom: 3 }}>
+                      {label}
+                    </div>
+                    <div style={{ color: '#e8e2d8', fontSize: 14, wordBreak: 'break-word' }}>
+                      {value || '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="row" style={{ justifyContent: 'space-between', marginTop: 12 }}>
@@ -336,7 +393,15 @@ function EditUserModal({
         zIndex: 60,
       }}
     >
-      <div className="glass-card" style={{ maxWidth: 420, width: '100%' }}>
+      <div
+        className="glass-card"
+        style={{
+          maxWidth: 460,
+          width: '100%',
+          maxHeight: 'calc(100dvh - 32px)',
+          overflowY: 'auto',
+        }}
+      >
         <h3 style={{ marginTop: 0 }}>會員訂閱開通：{user.email}</h3>
         <label className="row" style={{ gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
           <input
