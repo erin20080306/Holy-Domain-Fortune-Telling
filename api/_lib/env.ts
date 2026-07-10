@@ -83,13 +83,13 @@ export function planLimitsFromEnv(): Record<PlanId, PlanLimits> {
       shortAiPerMonth: numAtLeast('PLAN_PRO_SHORT_AI_LIMIT', 30),
       premiumReportPerMonth: numAtLeast('PLAN_PRO_PREMIUM_REPORT_LIMIT', 2),
       premiumChatPerMonth: numAtLeast('PLAN_PRO_CHAT_LIMIT', 30),
-      tarotPerDay: numAtLeast('PLAN_PRO_TAROT_DAILY_LIMIT', 99),
+      tarotPerDay: numAtLeast('PLAN_PRO_TAROT_DAILY_LIMIT', 1),
     },
     master_monthly: {
       shortAiPerMonth: numAtLeast('PLAN_MASTER_SHORT_AI_LIMIT', 100),
       premiumReportPerMonth: numAtLeast('PLAN_MASTER_PREMIUM_REPORT_LIMIT', 8),
       premiumChatPerMonth: numAtLeast('PLAN_MASTER_CHAT_LIMIT', 150),
-      tarotPerDay: numAtLeast('PLAN_MASTER_TAROT_DAILY_LIMIT', 99),
+      tarotPerDay: numAtLeast('PLAN_MASTER_TAROT_DAILY_LIMIT', 1),
     },
   };
 }

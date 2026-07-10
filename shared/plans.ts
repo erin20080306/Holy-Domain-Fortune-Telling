@@ -46,13 +46,13 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     shortAiPerMonth: 30,
     premiumReportPerMonth: 2,
     premiumChatPerMonth: 30,
-    tarotPerDay: 99,
+    tarotPerDay: 1,
   },
   master_monthly: {
     shortAiPerMonth: 100,
     premiumReportPerMonth: 8,
     premiumChatPerMonth: 150,
-    tarotPerDay: 99,
+    tarotPerDay: 1,
   },
 };
 
@@ -87,7 +87,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     features: [
       '每月 2 份 3,000 字（約 2–3 頁 A4）深度命理報告',
       '每月 30 次命理短解讀',
-      '每月 30 則進階命理老師對話',
+      '每月 30 則命盤／報告追問對話',
       '無廣告',
       '可保存歷史報告',
     ],
@@ -101,7 +101,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     features: [
       '每月 8 份 3,000 字（約 2–3 頁 A4）深度命理報告',
       '每月 100 次命理短解讀',
-      '每月 150 則進階命理老師對話',
+      '每月 150 則命盤／報告追問對話',
       '優先客服',
       '無廣告',
       '可保存歷史報告',

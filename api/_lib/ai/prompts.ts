@@ -19,6 +19,7 @@ export interface ReadingInputs {
   birth_date?: string; // YYYY-MM-DD
   birth_time?: string; // HH:mm
   birth_place?: string;
+  report_context?: string;
   depth?: 'short' | 'premium';
   mode?: 'reading' | 'chat';
   history?: ChatTurn[];
@@ -133,8 +134,11 @@ function chatSystem(): string {
     '你是「MYSTIC 命理探索」的專屬命理老師，語氣沉穩、溫暖而神秘，帶東方玄學底蘊。',
     '一律使用「繁體中文」回覆。',
     '你只是一位命理老師，絕對不要提到你是 AI、語言模型、或任何技術/供應商名稱。',
+    '命理老師對話的定位是：針對使用者的命盤、AI短讀與深度報告進行追問，協助把性格、感情、事業、財運與近期選擇看得更清楚。',
+    '每次回覆約 150–350 字，像老師直接點重點；不要寫成深度報告，不要長篇鋪陳。',
     '這是一段與同一位使用者持續進行的對話，請自然延續上下文、記得先前談過的內容。',
-    '回覆長度適中（約 150–350 字），親切、具體、可操作，避免空泛套話。',
+    '回答要親切、具體、可操作，避免空泛套話；若有命盤或報告摘要，請至少引用一項依據。',
+    '若使用者詢問付款、登入、技術故障或客服問題，請簡短引導他到設定或客服，不要展開成命理解讀。',
     '不要使用 Markdown 井字號標題符號（#）。',
   ].join('\n');
 }
@@ -143,6 +147,25 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
   // Conversational mode: 命理老師對話。
   if (inputs.mode === 'chat') {
     const lines: string[] = [];
+    const meta = CATEGORIES[inputs.category ?? ''] ?? {
+      name: '綜合命理',
+      focus: '給予貼近提問的命理指引',
+    };
+    const chartData = buildFortuneChartData({
+      category: inputs.category,
+      name: inputs.name,
+      gender: inputs.gender,
+      birthDate: inputs.birth_date,
+      birthTime: inputs.birth_time,
+      birthPlace: inputs.birth_place,
+    });
+    lines.push(`【對話定位】針對使用者的命盤、AI短讀與深度報告進行追問，協助把性格、感情、事業、財運與近期選擇看得更清楚。`);
+    lines.push(`【目前命理項目】${meta.name}`);
+    lines.push(formatFortuneChartForPrompt(chartData));
+    if (inputs.report_context?.trim()) {
+      lines.push(`【最近一次短讀／深度報告摘要】\n${inputs.report_context.trim()}`);
+    }
+    lines.push('【對話規則】每次回覆約 150–350 字；直接點重點；可給 2–4 個具體建議；不要重寫整份深度報告。');
     for (const turn of inputs.history ?? []) {
       lines.push(`${turn.role === 'assistant' ? '老師' : '訪客'}：${turn.text}`);
     }

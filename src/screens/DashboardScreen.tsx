@@ -27,6 +27,8 @@ const CHART_SUMMARY_LABELS = [
   '紫微命宮',
   '紫微命宮主星',
 ];
+const CHAT_SUGGESTIONS = ['追問性格盲點', '追問感情互動', '追問事業方向', '整理近期行動'];
+const MAX_CHAT_CONTEXT_CHARS = 2600;
 
 interface ReportTableData {
   headers: string[];
@@ -192,6 +194,21 @@ function resultTierMeta(kind: ResultKind): { label: string; detail: string; tone
     detail: '快速掃讀｜表格重點｜近期建議',
     tone: 'border-cyan-300/25 bg-cyan-300/[0.06] text-cyan-100',
   };
+}
+
+function compactChatContext(content: string, kind: ResultKind): string | undefined {
+  const cleaned = content
+    .replace(/\[debug\][\s\S]*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return undefined;
+
+  const label = kind === 'premium' ? '最近一次深度報告' : kind === 'tarot' ? '最近一次塔羅短讀' : '最近一次AI短讀';
+  const clipped =
+    cleaned.length > MAX_CHAT_CONTEXT_CHARS
+      ? `${cleaned.slice(0, MAX_CHAT_CONTEXT_CHARS)}…`
+      : cleaned;
+  return `${label}摘要：${clipped}`;
 }
 
 function reportHeading(line: string): string | null {
@@ -920,7 +937,20 @@ export function DashboardScreen() {
       </div>
 
     </div>
-      {chatOpen && createPortal(<ChatPanel onClose={() => setChatOpen(false)} />, document.body)}
+      {chatOpen &&
+        createPortal(
+          <ChatPanel
+            onClose={() => setChatOpen(false)}
+            categoryId={selectedCat?.id}
+            categoryName={selectedCat?.name}
+            name={fullName.trim() || undefined}
+            gender={gender || undefined}
+            birthDate={composedBirthDate}
+            birthTime={birthTime || undefined}
+            reportContext={compactChatContext(result, resultKind)}
+          />,
+          document.body,
+        )}
     </>
   );
 }
@@ -930,9 +960,30 @@ interface ChatMsg {
   text: string;
 }
 
-function ChatPanel({ onClose }: { onClose: () => void }) {
+function ChatPanel({
+  onClose,
+  categoryId,
+  categoryName,
+  name,
+  gender,
+  birthDate,
+  birthTime,
+  reportContext,
+}: {
+  onClose: () => void;
+  categoryId?: string;
+  categoryName?: string;
+  name?: string;
+  gender?: string;
+  birthDate?: string;
+  birthTime?: string;
+  reportContext?: string;
+}) {
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: 'assistant', text: '你好，我是你的專屬命理老師。想聊聊感情、事業、財運，或近期的困惑嗎？' },
+    {
+      role: 'assistant',
+      text: '我是你的專屬命理老師。你可以針對命盤、AI短讀或深度報告追問；我會用 150–350 字幫你把性格、感情、事業、財運與近期選擇講清楚。',
+    },
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -966,7 +1017,16 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
     setInput('');
     setBusy(true);
     try {
-      const res = await api.generate('premium_chat', { question: text, history });
+      const res = await api.generate('premium_chat', {
+        question: text,
+        history,
+        category: categoryId,
+        name,
+        gender,
+        birth_date: birthDate,
+        birth_time: birthTime,
+        report_context: reportContext,
+      });
       setMessages((m) => [
         ...m,
         {
@@ -1002,7 +1062,12 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
           <div className="flex min-h-11 items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Icons.MessageCircle size={16} className="text-[#A89882]" />
-              <span className="text-sm text-white tracking-widest font-light">命理老師對話</span>
+              <div>
+                <span className="block text-sm text-white tracking-widest font-light">命理老師對話</span>
+                <span className="mt-0.5 block text-[10px] leading-4 tracking-[0.12em] text-[#A89882]/70">
+                  {categoryName ? `${categoryName} 追問` : '命盤／短讀／深度報告追問'}
+                </span>
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -1016,6 +1081,9 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-4 py-5 space-y-4 custom-scrollbar sm:px-5 sm:py-6">
+          <div className="rounded-2xl border border-[#A89882]/20 bg-[#A89882]/[0.06] px-4 py-3 text-xs font-light leading-6 tracking-wide text-slate-300">
+            針對你的命盤、短讀與深度報告進行追問；每次回覆會直接點重點，避免寫成長篇報告。
+          </div>
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
@@ -1039,27 +1107,41 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
           <div ref={endRef} />
         </div>
 
-        <div className="shrink-0 border-t border-white/10 p-3 pb-[calc(var(--safe-bottom)+12px)] flex items-end gap-3 sm:p-4">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void send();
-              }
-            }}
-            rows={1}
-            placeholder="輸入訊息…（Enter 送出）"
-            className="min-h-12 flex-1 bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 resize-none max-h-28"
-          />
-          <button
-            onClick={() => void send()}
-            disabled={busy || !input.trim()}
-            className="w-12 h-12 shrink-0 rounded-full bg-[#A89882] text-[#050508] flex items-center justify-center hover:bg-white transition-all disabled:opacity-50"
-          >
-            <Icons.Send size={16} />
-          </button>
+        <div className="shrink-0 border-t border-white/10 p-3 pb-[calc(var(--safe-bottom)+12px)] sm:p-4">
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+            {CHAT_SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => setInput(suggestion)}
+                className="shrink-0 rounded-full border border-white/10 px-3 py-2 text-[11px] tracking-[0.12em] text-slate-300 transition-colors hover:border-[#A89882]/50 hover:text-[#A89882]"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-end gap-3">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void send();
+                }
+              }}
+              rows={1}
+              placeholder="追問報告重點…（Enter 送出）"
+              className="min-h-12 flex-1 bg-transparent border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30 resize-none max-h-28"
+            />
+            <button
+              onClick={() => void send()}
+              disabled={busy || !input.trim()}
+              className="w-12 h-12 shrink-0 rounded-full bg-[#A89882] text-[#050508] flex items-center justify-center hover:bg-white transition-all disabled:opacity-50"
+            >
+              <Icons.Send size={16} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

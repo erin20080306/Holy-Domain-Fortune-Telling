@@ -53,6 +53,7 @@ export async function generateReading(
     birth_date: typeof body.birth_date === 'string' ? body.birth_date : undefined,
     birth_time: typeof body.birth_time === 'string' ? body.birth_time : undefined,
     birth_place: typeof body.birth_place === 'string' ? body.birth_place : undefined,
+    report_context: typeof body.report_context === 'string' ? body.report_context : undefined,
     depth: premium ? 'premium' : 'short',
     mode: usage === 'premium_chat' ? 'chat' : 'reading',
     history: usage === 'premium_chat' ? parseHistory(body.history) : undefined,
@@ -61,7 +62,7 @@ export async function generateReading(
   const { system, user } = buildPrompt(inputs);
   const { anthropicKey, claudeModel, geminiKey, geminiModel } = serverEnv.ai;
   const maxOutputTokens =
-    usage === 'premium_report' ? 8192 : usage === 'premium_chat' ? 1400 : 2400;
+    usage === 'premium_report' ? 8192 : usage === 'premium_chat' ? 900 : 2400;
 
   // Provider preference order by tier, filtered to those with keys.
   const chain: Array<() => Promise<ProviderResult | null>> = [];
