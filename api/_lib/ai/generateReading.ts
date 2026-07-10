@@ -60,11 +60,13 @@ export async function generateReading(
 
   const { system, user } = buildPrompt(inputs);
   const { anthropicKey, claudeModel, geminiKey, geminiModel } = serverEnv.ai;
+  const maxOutputTokens =
+    usage === 'premium_report' ? 8192 : usage === 'premium_chat' ? 1400 : 2400;
 
   // Provider preference order by tier, filtered to those with keys.
   const chain: Array<() => Promise<ProviderResult | null>> = [];
-  const claude = () => callClaude(anthropicKey, claudeModel, system, user);
-  const gemini = () => callGemini(geminiKey, geminiModel, system, user);
+  const claude = () => callClaude(anthropicKey, claudeModel, system, user, maxOutputTokens);
+  const gemini = () => callGemini(geminiKey, geminiModel, system, user, maxOutputTokens);
 
   if (premium) {
     if (anthropicKey) chain.push(claude);

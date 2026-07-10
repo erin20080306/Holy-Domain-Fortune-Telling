@@ -26,6 +26,7 @@ export async function callGemini(
   model: string,
   system: string,
   user: string,
+  maxOutputTokens = 8192,
 ): Promise<ProviderResult | null> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model,
@@ -37,7 +38,7 @@ export async function callGemini(
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: { temperature: 0.85, maxOutputTokens: 8192 },
+      generationConfig: { temperature: 0.85, maxOutputTokens },
     }),
   });
 
@@ -63,6 +64,7 @@ export async function callClaude(
   model: string,
   system: string,
   user: string,
+  maxOutputTokens = 8192,
 ): Promise<ProviderResult | null> {
   const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -73,7 +75,7 @@ export async function callClaude(
     },
     body: JSON.stringify({
       model,
-      max_tokens: 8192,
+      max_tokens: maxOutputTokens,
       temperature: 0.8,
       system,
       messages: [{ role: 'user', content: user }],

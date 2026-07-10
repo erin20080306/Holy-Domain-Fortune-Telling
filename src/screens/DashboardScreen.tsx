@@ -42,6 +42,8 @@ interface ReportSection {
   blocks: ReportBlock[];
 }
 
+type ResultKind = 'short' | 'premium' | 'tarot' | null;
+
 interface ReportAccent {
   text: string;
   border: string;
@@ -166,6 +168,30 @@ function formatGenerateError(res: any, usageType: string): string {
   }
 
   return res?.message ?? '目前服務暫時無法使用，請稍後再試。';
+}
+
+function resultTierMeta(kind: ResultKind): { label: string; detail: string; tone: string } {
+  if (kind === 'premium') {
+    return {
+      label: '專業深度報告',
+      detail: '校盤細論｜性格底盤｜事業財運感情｜行動策略',
+      tone: 'border-[#A89882]/40 bg-[#A89882]/10 text-[#f4e7d3]',
+    };
+  }
+
+  if (kind === 'tarot') {
+    return {
+      label: '塔羅神諭短讀',
+      detail: '牌陣重點｜當下狀態｜下一步建議',
+      tone: 'border-rose-300/25 bg-rose-300/[0.06] text-rose-100',
+    };
+  }
+
+  return {
+    label: 'AI 短讀',
+    detail: '快速掃讀｜表格重點｜近期建議',
+    tone: 'border-cyan-300/25 bg-cyan-300/[0.06] text-cyan-100',
+  };
 }
 
 function reportHeading(line: string): string | null {
@@ -395,7 +421,9 @@ function GeneratingStatus({
           <p className="text-[10px] font-semibold tracking-[0.24em] text-[#A89882]/75">GENERATING</p>
           <h3 className="mt-1 text-base font-light tracking-widest text-white">{title}</h3>
           <p className="mt-2 text-sm font-light leading-7 tracking-wide text-slate-300">
-            {categoryName} 正在生成，深度報告需要較完整的校盤與撰寫時間，請稍候。
+            {premium
+              ? `${categoryName} 正在校盤、分章細論與整理專業報告，請稍候。`
+              : `${categoryName} 正在整理重點，短讀會以表格快速呈現。`}
           </p>
         </div>
       </div>
@@ -418,6 +446,7 @@ export function DashboardScreen() {
   const { subscription, isAdmin } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
   const [result, setResult] = useState<string>('');
+  const [resultKind, setResultKind] = useState<ResultKind>(null);
   const [busy, setBusy] = useState(false);
   const [busyType, setBusyType] = useState<string | null>(null);
 
@@ -455,10 +484,12 @@ export function DashboardScreen() {
   const yearGanZhiFact = fortuneChartData.facts.find((fact) => fact.label === '農曆年干支')?.value ?? '未提供';
   const lifePathFact = fortuneChartData.facts.find((fact) => fact.label === '生命靈數')?.value ?? '未提供';
   const hasPartialBirthDate = Boolean(birthYear || birthMonth || birthDay);
+  const resultTier = resultTierMeta(resultKind);
 
   const pick = (id: string) => {
     setSelected(id);
     setResult('');
+    setResultKind(null);
   };
 
   // After choosing a method, smoothly scroll the input panel into view so the
@@ -480,13 +511,18 @@ export function DashboardScreen() {
 
   const draw = async (usageType: string) => {
     if (!selectedCat) return;
+    const nextResultKind: ResultKind =
+      usageType === 'premium_report' ? 'premium' : usageType === 'tarot' ? 'tarot' : 'short';
+
     if (hasPartialBirthDate && !composedBirthDate) {
+      setResultKind(null);
       setResult('請輸入完整且有效的出生年月日。');
       return;
     }
 
     setBusy(true);
     setBusyType(usageType);
+    setResultKind(nextResultKind);
     setResult('');
     try {
       const res = await api.generate(usageType, {
@@ -721,7 +757,7 @@ export function DashboardScreen() {
                   ? '解讀中…'
                   : selectedCat.id === 'tarot'
                     ? '抽牌解讀'
-                    : '開始解讀'}
+                    : 'AI短讀'}
                 <Icons.Sparkles size={16} />
               </button>
               <button
@@ -759,6 +795,18 @@ export function DashboardScreen() {
             <div className="flex items-center gap-2 text-[10px] tracking-widest text-[#A89882]/70">
               <Icons.ListTree size={14} />
               {reportSections.length} 節
+            </div>
+          </div>
+
+          <div className={`mb-6 rounded-2xl border px-4 py-3 ${resultTier.tone}`}>
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Icons.BadgeCheck size={15} />
+                <span className="text-sm font-medium tracking-[0.18em]">{resultTier.label}</span>
+              </div>
+              <span className="text-[11px] font-light leading-6 tracking-[0.12em] opacity-80">
+                {resultTier.detail}
+              </span>
             </div>
           </div>
 
