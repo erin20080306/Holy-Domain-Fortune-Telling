@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ArrowRight, Mail, Send } from 'lucide-react';
-import { PLAN_DISPLAY } from '@shared/plans';
+import { PLAN_DISPLAY, type PlanId } from '@shared/plans';
 import { shouldShowPaypalLinks, type Platform } from '@shared/paypalVisibility';
 import { USER_MESSAGES } from '@shared/productCopy';
-import { clientEnv, PAYPAL_LINKS } from '../lib/env';
+import { clientEnv } from '../lib/env';
+import { beginPaypalCheckout } from '../lib/checkout';
 import { isStandalone } from '../pwa/pwaInstallPrompt';
 import { useAuth } from '../state/AuthContext';
 import { api } from '../lib/api';
@@ -21,8 +22,12 @@ function detectPlatform(): Platform {
 
 export function PlansScreen() {
   const nav = useNavigate();
+  const [params] = useSearchParams();
   const { session } = useAuth();
   const platform = detectPlatform();
+  const autoCheckoutStarted = useRef(false);
+  const [checkoutBusy, setCheckoutBusy] = useState<PlanId | null>(null);
+  const [checkoutError, setCheckoutError] = useState('');
 
   const showPaypal = shouldShowPaypalLinks(platform, {
     paypalCheckoutEnabled: clientEnv.paypal.checkoutEnabled,
@@ -31,8 +36,35 @@ export function PlansScreen() {
     androidHideExternalPaypal: clientEnv.paypal.androidHideExternal,
   });
 
-  const linkFor = (planId: string) =>
-    planId === 'pro_monthly' ? PAYPAL_LINKS.pro_monthly : PAYPAL_LINKS.master_monthly;
+  const startCheckout = async (planId: PlanId) => {
+    if (planId === 'free') return;
+    if (!session) {
+      nav(`/auth?mode=login&checkout=${planId}`);
+      return;
+    }
+
+    setCheckoutError('');
+    setCheckoutBusy(planId);
+    const error = await beginPaypalCheckout(planId);
+    if (error) {
+      setCheckoutError(error);
+      setCheckoutBusy(null);
+    }
+  };
+
+  useEffect(() => {
+    const requestedPlan = params.get('checkout');
+    if (
+      session &&
+      !autoCheckoutStarted.current &&
+      (requestedPlan === 'pro_monthly' || requestedPlan === 'master_monthly')
+    ) {
+      autoCheckoutStarted.current = true;
+      void startCheckout(requestedPlan);
+    }
+    // startCheckout intentionally uses current session/navigation state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, session]);
 
   return (
     <div className="w-full animate-[fadeIn_0.5s_ease-out]">
@@ -84,15 +116,15 @@ export function PlansScreen() {
                 {plan.buttonText}
               </button>
             ) : showPaypal ? (
-              <a
+              <button
+                type="button"
                 className="w-full py-3 rounded-full bg-[#A89882] text-black tracking-widest text-xs font-medium hover:bg-white transition-all shadow-[0_0_20px_rgba(168,152,130,0.3)] flex justify-center items-center gap-2"
-                href={linkFor(plan.id)}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={() => void startCheckout(plan.id)}
+                disabled={checkoutBusy !== null}
               >
-                {plan.buttonText}
+                {checkoutBusy === plan.id ? '建立安全付款連結中…' : plan.buttonText}
                 <ArrowRight size={14} />
-              </a>
+              </button>
             ) : (
               <button className="w-full py-3 rounded-full border border-white/20 text-white tracking-widest text-xs hover:bg-white hover:text-black transition-all" disabled>
                 訂閱功能準備中
@@ -101,6 +133,9 @@ export function PlansScreen() {
           </div>
         ))}
       </div>
+      {checkoutError && (
+        <p className="mx-auto mt-5 max-w-2xl text-center text-sm text-[#e0a97a]">{checkoutError}</p>
+      )}
       <div className="mt-8 max-w-5xl mx-auto border border-[#A89882]/20 rounded-3xl p-6 md:p-8 bg-white/[0.02]">
         <p className="text-[#A89882] text-[10px] tracking-[0.3em] font-semibold mb-2 flex gap-2 items-center">
           <span>深度命理報告內容</span>

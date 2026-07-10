@@ -9,7 +9,7 @@ import { formatLunarDateForPrompt } from '@shared/lunarCalendar';
 import { PLAN_DISPLAY, PLAN_LABEL, type PlanId } from '@shared/plans';
 import { useAuth } from '../state/AuthContext';
 import { api } from '../lib/api';
-import { PAYPAL_LINKS } from '../lib/env';
+import { beginPaypalCheckout } from '../lib/checkout';
 
 const NEEDS_NAME = new Set(['name']);
 const MIN_BIRTH_YEAR = 1900;
@@ -48,6 +48,16 @@ interface ReportSection {
 }
 
 type ResultKind = 'short' | 'premium' | 'tarot' | null;
+
+interface SavedReading {
+  id: string;
+  category: string;
+  title: string;
+  question: string | null;
+  content: string;
+  input_snapshot: Record<string, string>;
+  created_at: string;
+}
 
 interface ReportAccent {
   text: string;
@@ -145,10 +155,6 @@ function isActivePaidSubscription(subscription: SubscriptionLike | null): boolea
 
   const expiresAt = Date.parse(subscription.current_period_end);
   return !Number.isFinite(expiresAt) || expiresAt > Date.now();
-}
-
-function paypalLinkForPlan(planId: PlanId): string {
-  return planId === 'master_monthly' ? PAYPAL_LINKS.master_monthly : PAYPAL_LINKS.pro_monthly;
 }
 
 function pad2(value: string): string {
@@ -502,7 +508,151 @@ function GeneratingStatus({
   );
 }
 
-function PlanPromptModal({ onClose }: { onClose: () => void }) {
+function ReadingHistoryModal({
+  onClose,
+  onOpen,
+}: {
+  onClose: () => void;
+  onOpen: (reading: SavedReading) => void;
+}) {
+  const [readings, setReadings] = useState<SavedReading[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [available, setAvailable] = useState(true);
+  const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    void api
+      .getReadings()
+      .then((response) => {
+        if (!response?.ok) {
+          setError(response?.message ?? '目前無法讀取歷史報告。');
+          return;
+        }
+        setAvailable(response.available !== false);
+        setReadings(Array.isArray(response.readings) ? response.readings : []);
+      })
+      .catch(() => setError('目前無法讀取歷史報告。'))
+      .finally(() => setLoading(false));
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  const remove = async (readingId: string) => {
+    if (!window.confirm('確定刪除這份深度報告？刪除後無法復原。')) return;
+    setDeletingId(readingId);
+    const response = await api.deleteReading(readingId);
+    if (response?.ok) {
+      setReadings((items) => items.filter((item) => item.id !== readingId));
+    } else {
+      setError('刪除失敗，請稍後再試。');
+    }
+    setDeletingId(null);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/80 px-0 pt-[calc(var(--safe-top)+10px)] backdrop-blur-sm sm:items-center sm:p-4"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[calc(100dvh-var(--safe-top)-12px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-[1.5rem] border border-[#A89882]/25 bg-[#09090e] sm:max-h-[82vh] sm:rounded-[2rem]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="歷史深度報告"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-6">
+          <div>
+            <p className="text-[10px] tracking-[0.22em] text-[#A89882]/70">REPORT ARCHIVE</p>
+            <h3 className="mt-1 text-lg font-light tracking-widest text-white">歷史深度報告</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80"
+            aria-label="關閉歷史報告"
+          >
+            <Icons.X size={18} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 pb-[calc(var(--safe-bottom)+16px)] custom-scrollbar sm:p-6">
+          {loading && <p className="py-10 text-center text-sm text-slate-400">讀取報告中…</p>}
+          {!loading && !available && (
+            <p className="rounded-2xl border border-[#e0a97a]/25 bg-[#e0a97a]/5 p-4 text-sm leading-7 text-[#e0a97a]">
+              歷史報告資料表尚未啟用，請先執行最新的 Supabase migration。
+            </p>
+          )}
+          {!loading && available && !error && readings.length === 0 && (
+            <div className="py-12 text-center">
+              <Icons.ScrollText className="mx-auto text-[#A89882]/50" size={28} />
+              <p className="mt-4 text-sm tracking-wide text-slate-400">尚未產生深度報告</p>
+            </div>
+          )}
+          {error && <p className="text-sm text-[#e0a97a]">{error}</p>}
+          {readings.map((reading) => (
+            <article key={reading.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h4 className="text-base font-light tracking-widest text-white">{reading.title}</h4>
+                  <p className="mt-2 text-xs tracking-wide text-[#A89882]/70">
+                    {new Intl.DateTimeFormat('zh-TW', {
+                      timeZone: 'Asia/Taipei',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }).format(new Date(reading.created_at))}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void remove(reading.id)}
+                  disabled={deletingId === reading.id}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/45 hover:text-rose-200"
+                  aria-label={`刪除${reading.title}`}
+                >
+                  <Icons.Trash2 size={15} />
+                </button>
+              </div>
+              {reading.question && (
+                <p className="mt-3 line-clamp-2 text-sm font-light leading-7 tracking-wide text-slate-400">
+                  提問：{reading.question}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => onOpen(reading)}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#A89882]/40 px-4 py-3 text-xs tracking-[0.16em] text-[#A89882] hover:bg-[#A89882] hover:text-black"
+              >
+                開啟完整報告
+                <Icons.ArrowRight size={14} />
+              </button>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlanPromptModal({
+  onClose,
+  onSubscribe,
+  busyPlan,
+  error,
+}: {
+  onClose: () => void;
+  onSubscribe: (plan: Exclude<PlanId, 'free'>) => void;
+  busyPlan: PlanId | null;
+  error: string;
+}) {
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -539,6 +689,7 @@ function PlanPromptModal({ onClose }: { onClose: () => void }) {
             <p className="mt-2 max-w-2xl text-sm font-light leading-7 tracking-wide text-slate-400">
               免費可先體驗，訂閱可解鎖深度報告、更多短讀、塔羅與命理老師追問。
             </p>
+            {error && <p className="mt-2 text-sm text-[#e0a97a]">{error}</p>}
           </div>
           <button
             type="button"
@@ -581,16 +732,15 @@ function PlanPromptModal({ onClose }: { onClose: () => void }) {
                   ))}
                 </ul>
                 {paid ? (
-                  <a
-                    href={paypalLinkForPlan(plan.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={onClose}
+                  <button
+                    type="button"
+                    onClick={() => onSubscribe(plan.id as Exclude<PlanId, 'free'>)}
+                    disabled={busyPlan !== null}
                     className="mt-auto flex w-full items-center justify-center gap-2 rounded-full bg-[#A89882] px-5 py-3.5 text-center text-xs font-semibold tracking-[0.18em] text-[#050508] transition-colors hover:bg-white"
                   >
-                    直接訂閱
+                    {busyPlan === plan.id ? '建立付款連結中…' : '直接訂閱'}
                     <Icons.ArrowRight size={15} />
-                  </a>
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -626,8 +776,13 @@ export function DashboardScreen() {
   const [birthDay, setBirthDay] = useState('');
   const [birthTime, setBirthTime] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [savedReadingId, setSavedReadingId] = useState<string | null>(null);
+  const [checkoutBusy, setCheckoutBusy] = useState<PlanId | null>(null);
+  const [checkoutError, setCheckoutError] = useState('');
   const [planPromptDismissed, setPlanPromptDismissed] = useState(readPlanPromptDismissed);
   const panelRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const plan = (subscription?.plan ?? 'free') as PlanId;
   const selectedCat = FORTUNE_CATEGORIES.find((c) => c.id === selected) ?? null;
@@ -666,10 +821,39 @@ export function DashboardScreen() {
     setPlanPromptDismissed(true);
   };
 
+  const startCheckout = async (checkoutPlan: Exclude<PlanId, 'free'>) => {
+    setCheckoutError('');
+    setCheckoutBusy(checkoutPlan);
+    const error = await beginPaypalCheckout(checkoutPlan);
+    if (error) {
+      setCheckoutError(error);
+      setCheckoutBusy(null);
+    }
+  };
+
   const pick = (id: string) => {
     setSelected(id);
     setResult('');
     setResultKind(null);
+    setSavedReadingId(null);
+  };
+
+  const openSavedReading = (reading: SavedReading) => {
+    const snapshot = reading.input_snapshot ?? {};
+    const dateParts = snapshot.birth_date?.split('-') ?? [];
+    setSelected(reading.category);
+    setQuestion(reading.question ?? '');
+    setFullName(snapshot.name ?? '');
+    setGender(snapshot.gender ?? '');
+    setBirthYear(dateParts[0] ?? '');
+    setBirthMonth(dateParts[1] ? String(Number(dateParts[1])) : '');
+    setBirthDay(dateParts[2] ? String(Number(dateParts[2])) : '');
+    setBirthTime(snapshot.birth_time ?? '');
+    setResult(reading.content);
+    setResultKind('premium');
+    setSavedReadingId(reading.id);
+    setHistoryOpen(false);
+    window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
   };
 
   // After choosing a method, smoothly scroll the input panel into view so the
@@ -704,6 +888,7 @@ export function DashboardScreen() {
     setBusyType(usageType);
     setResultKind(nextResultKind);
     setResult('');
+    setSavedReadingId(null);
     try {
       const res = await api.generate(usageType, {
         category: selectedCat.id,
@@ -715,6 +900,7 @@ export function DashboardScreen() {
       });
       if (res?.ok) {
         setResult(res.content);
+        setSavedReadingId(typeof res.reading_id === 'string' ? res.reading_id : null);
       } else {
         const base = formatGenerateError(res, usageType);
         setResult(isAdmin && res?.debug ? `${base}\n\n[debug] ${res.debug}` : base);
@@ -958,7 +1144,7 @@ export function DashboardScreen() {
       )}
 
       {result && (
-        <div className="bg-white/[0.025] backdrop-blur-md border border-[#A89882]/20 rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-8 relative overflow-hidden mt-8">
+        <div ref={resultRef} className="scroll-mt-6 bg-white/[0.025] backdrop-blur-md border border-[#A89882]/20 rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-8 relative overflow-hidden mt-8">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#A89882]/70 to-transparent"></div>
           <div className="mb-6 flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -973,8 +1159,17 @@ export function DashboardScreen() {
               </div>
             </div>
             <div className="flex items-center gap-2 text-[10px] tracking-widest text-[#A89882]/70">
-              <Icons.ListTree size={14} />
-              {reportSections.length} 節
+              {savedReadingId ? (
+                <>
+                  <Icons.BookMarked size={14} />
+                  已保存
+                </>
+              ) : (
+                <>
+                  <Icons.ListTree size={14} />
+                  {reportSections.length} 節
+                </>
+              )}
             </div>
           </div>
 
@@ -1083,6 +1278,13 @@ export function DashboardScreen() {
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
           <button
             className="w-full sm:w-auto px-6 py-4 rounded-full border border-[#A89882]/40 text-[#A89882] tracking-[0.2em] text-xs hover:bg-[#A89882] hover:text-[#050508] transition-all flex items-center justify-center gap-2"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <Icons.BookOpen size={16} />
+            歷史報告
+          </button>
+          <button
+            className="w-full sm:w-auto px-6 py-4 rounded-full border border-[#A89882]/40 text-[#A89882] tracking-[0.2em] text-xs hover:bg-[#A89882] hover:text-[#050508] transition-all flex items-center justify-center gap-2"
             onClick={() => setChatOpen(true)}
           >
             <Icons.MessageCircle size={16} />
@@ -1102,7 +1304,12 @@ export function DashboardScreen() {
     </div>
       {showPlanPrompt &&
         createPortal(
-          <PlanPromptModal onClose={dismissPlanPrompt} />,
+          <PlanPromptModal
+            onClose={dismissPlanPrompt}
+            onSubscribe={(checkoutPlan) => void startCheckout(checkoutPlan)}
+            busyPlan={checkoutBusy}
+            error={checkoutError}
+          />,
           document.body,
         )}
       {chatOpen &&
@@ -1116,6 +1323,14 @@ export function DashboardScreen() {
             birthDate={composedBirthDate}
             birthTime={birthTime || undefined}
             reportContext={compactChatContext(result, resultKind)}
+          />,
+          document.body,
+        )}
+      {historyOpen &&
+        createPortal(
+          <ReadingHistoryModal
+            onClose={() => setHistoryOpen(false)}
+            onOpen={openSavedReading}
           />,
           document.body,
         )}

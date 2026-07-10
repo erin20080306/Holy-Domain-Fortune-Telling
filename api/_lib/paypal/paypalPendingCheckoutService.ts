@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { getSupabaseAdmin } from '../supabaseAdmin.js';
 import { getPaypalConfig } from './paypalConfig.js';
+import { createPaypalSubscriptionApproval } from './paypalSubscriptionCheckout.js';
 import type { PlanId } from '../../../shared/plans.js';
 
 export interface PendingCheckout {
   checkoutToken: string;
   checkoutUrl: string;
+  checkoutMode: 'subscription_api' | 'fixed_link';
   plan: PlanId;
 }
 
@@ -19,9 +21,16 @@ export async function createPendingCheckout(
   const planCfg = cfg.plans[plan];
   const checkoutToken = randomUUID();
 
-  // NCP fixed links cannot carry metadata; we still record our token so an
-  // admin can reconcile the payment later if the webhook cannot auto-match.
-  const checkoutUrl = planCfg.link;
+  const appUrl = cfg.publicAppUrl.replace(/\/$/, '');
+  const subscriptionUrl = await createPaypalSubscriptionApproval({
+    billingPlanId: planCfg.billingPlanId,
+    checkoutToken,
+    returnUrl: `${appUrl}/app?payment=return`,
+    cancelUrl: `${appUrl}/plans?payment=cancelled`,
+  }).catch(() => null);
+  const checkoutMode = subscriptionUrl ? 'subscription_api' : 'fixed_link';
+  const checkoutUrl = subscriptionUrl ?? planCfg.link;
+  if (!checkoutUrl) throw new Error('PayPal checkout URL is not configured');
 
   const admin = getSupabaseAdmin();
   const { error } = await admin.from('paypal_pending_checkouts').insert({
@@ -34,5 +43,5 @@ export async function createPendingCheckout(
   });
   if (error) throw error;
 
-  return { checkoutToken, checkoutUrl, plan };
+  return { checkoutToken, checkoutUrl, checkoutMode, plan };
 }

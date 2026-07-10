@@ -5,13 +5,16 @@ import {
   getOrCreateQuota,
   getUsageBucketKey,
   incrementUsage,
+  releaseUsage,
+  reserveUsage,
   usedCount,
 } from '../_lib/services/UsageRepository.js';
 import { planLimitsFromEnv } from '../_lib/env.js';
 import { checkEntitlement, effectivePlan } from '../../shared/entitlement.js';
 import { USER_MESSAGES } from '../../shared/productCopy.js';
-import type { UsageType } from '../../shared/plans.js';
+import type { PlanId, UsageType } from '../../shared/plans.js';
 import { generateReading } from '../_lib/ai/generateReading.js';
+import { saveDeepReport } from '../_lib/services/ReadingHistoryRepository.js';
 
 const ALLOWED: UsageType[] = ['short_reading', 'premium_report', 'premium_chat', 'tarot'];
 
@@ -36,8 +39,8 @@ function describeError(err: unknown): string {
 
 // Generates fortune content. Enforcement order:
 // 1) verify auth  2) check entitlement  3) produce content  4) increment usage.
-// Usage is incremented ONLY on successful, non-cached generation. The client
-// never learns which provider/model produced the content.
+// Usage is incremented after every successful generation. Cache decisions are
+// server-owned; no client payload can opt out of quota consumption.
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const user = await getAuthedUser(req);
   if (!user) return sendJson(res, 401, { ok: false, message: USER_MESSAGES.loginRequired });
@@ -48,6 +51,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const usage = body.usage_type as UsageType;
   if (!ALLOWED.includes(usage)) return sendJson(res, 400, { ok: false });
   let usageBucket = getUsageBucketKey(usage);
+  let effectiveUserPlan: PlanId = 'free';
 
   // Admins have unlimited access and never require a subscription. Skip all
   // entitlement/quota enforcement for them.
@@ -57,9 +61,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (!admin) {
     try {
       const sub = await ensureSubscription(user.userId);
-      const plan = effectivePlan(sub.plan, sub.status, sub.current_period_end);
-      usageBucket = getUsageBucketKey(usage, new Date(), plan);
-      const quota = await getOrCreateQuota(user.userId, plan, usageBucket);
+      effectiveUserPlan = effectivePlan(sub.plan, sub.status, sub.current_period_end);
+      usageBucket = getUsageBucketKey(usage, new Date(), effectiveUserPlan);
+      const quota = await getOrCreateQuota(user.userId, effectiveUserPlan, usageBucket);
 
       gate = checkEntitlement({
         plan: sub.plan,
@@ -100,12 +104,59 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     }
   }
 
+  let reservation: 'not_needed' | 'reserved' | 'unavailable' = admin
+    ? 'not_needed'
+    : 'unavailable';
+  if (!admin) {
+    try {
+      const result = await reserveUsage(
+        user.userId,
+        effectiveUserPlan,
+        usage,
+        gate.limit,
+        usageBucket,
+      );
+      if (result === 'exhausted') {
+        return sendJson(res, 403, {
+          ok: false,
+          message: USER_MESSAGES.quotaExhausted,
+          reason: 'quota_exhausted',
+          limit: gate.limit,
+          used: gate.limit,
+          remaining: 0,
+        });
+      }
+      reservation = result;
+    } catch (err) {
+      console.error('[fortune/generate] quota reservation failed', {
+        userId: user.userId,
+        usage,
+        error: describeError(err),
+      });
+      return sendJson(res, 200, { ok: false, message: USER_MESSAGES.analysisBusy });
+    }
+  }
+
+  const releaseReservation = async () => {
+    if (reservation !== 'reserved') return;
+    try {
+      await releaseUsage(user.userId, usage, usageBucket);
+    } catch (err) {
+      console.error('[fortune/generate] quota release failed', {
+        userId: user.userId,
+        usage,
+        error: describeError(err),
+      });
+    }
+  };
+
   // --- Content production. The provider is server-only and selected via env;
   // its name is NEVER returned to the client. ---
   let content: string | null = null;
   try {
     content = await generateReading(usage, body, user.userId);
   } catch (err) {
+    await releaseReservation();
     // API failure -> do NOT decrement quota.
     const detail = describeError(err);
     return sendJson(res, 200, {
@@ -116,6 +167,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   if (!content) {
+    await releaseReservation();
     return sendJson(res, 200, {
       ok: false,
       message: USER_MESSAGES.analysisBusy,
@@ -123,10 +175,22 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     });
   }
 
-  // Only now, after successful non-cached generation, do we consume quota.
-  // Admins are unlimited, so their usage is never counted.
-  const fromCache = body.__from_cache === true;
-  if (!admin && !fromCache) {
+  let readingId: string | null = null;
+  if (usage === 'premium_report') {
+    try {
+      readingId = await saveDeepReport({ userId: user.userId, body, content });
+    } catch (err) {
+      // A history write must never hide an already-generated paid report.
+      console.error('[fortune/generate] saveDeepReport failed', {
+        userId: user.userId,
+        error: describeError(err),
+      });
+    }
+  }
+
+  // Only now, after successful generation, do we consume quota. Admins are
+  // unlimited, so their usage is never counted.
+  if (!admin && reservation !== 'reserved') {
     try {
       await incrementUsage(user.userId, usage, usageBucket);
     } catch (err) {
@@ -143,6 +207,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   return sendJson(res, 200, {
     ok: true,
     content,
-    remaining: Math.max(0, gate.remaining === Infinity ? 999 : gate.remaining - (fromCache ? 0 : 1)),
+    reading_id: readingId,
+    remaining: Math.max(0, gate.remaining === Infinity ? 999 : gate.remaining - 1),
   });
 }

@@ -29,6 +29,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   getSubscription: () => request<any>('/api/me/subscription'),
   getUsage: () => request<any>('/api/me/usage'),
+  getReadings: (page = 1) => request<any>(`/api/me/readings?page=${page}&pageSize=10`),
+  deleteReading: (readingId: string) =>
+    request<any>('/api/me/readings', {
+      method: 'DELETE',
+      body: JSON.stringify({ reading_id: readingId }),
+    }),
   bootstrap: (body: { display_name?: string; phone?: string }) =>
     request<any>('/api/me/bootstrap', { method: 'POST', body: JSON.stringify(body) }),
   createCheckout: (plan: string) =>

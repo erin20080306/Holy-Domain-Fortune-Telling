@@ -3,12 +3,14 @@ import type { PlanId } from '../../../shared/plans.js';
 
 export interface PaypalPlanConfig {
   planId: PlanId;
+  billingPlanId: string;
   priceTwd: number;
   link: string;
 }
 
 export function getPaypalConfig() {
   return {
+    publicAppUrl: serverEnv.publicAppUrl,
     clientId: serverEnv.paypal.clientId,
     clientSecret: serverEnv.paypal.clientSecret,
     webhookId: serverEnv.paypal.webhookId,
@@ -20,11 +22,13 @@ export function getPaypalConfig() {
     plans: {
       pro_monthly: {
         planId: 'pro_monthly' as PlanId,
+        billingPlanId: serverEnv.paypal.plan99.id,
         priceTwd: serverEnv.paypal.plan99.priceTwd,
         link: serverEnv.paypal.plan99.link,
       },
       master_monthly: {
         planId: 'master_monthly' as PlanId,
+        billingPlanId: serverEnv.paypal.plan299.id,
         priceTwd: serverEnv.paypal.plan299.priceTwd,
         link: serverEnv.paypal.plan299.link,
       },

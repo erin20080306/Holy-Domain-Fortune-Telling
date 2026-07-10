@@ -98,3 +98,41 @@ export async function incrementUsage(
   });
   if (error && !isMissingSupabaseSchemaError(error)) throw error;
 }
+
+export type UsageReservationResult = 'reserved' | 'exhausted' | 'unavailable';
+
+export async function reserveUsage(
+  userId: string,
+  plan: PlanId,
+  usage: UsageType,
+  limit: number,
+  month = getTaipeiUsageMonth(),
+): Promise<UsageReservationResult> {
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin.rpc('reserve_usage_counter', {
+    p_user_id: userId,
+    p_month: month,
+    p_plan: plan,
+    p_column: COLUMN[usage],
+    p_limit: limit,
+  });
+  if (error) {
+    if (isMissingSupabaseSchemaError(error)) return 'unavailable';
+    throw error;
+  }
+  return data === true ? 'reserved' : 'exhausted';
+}
+
+export async function releaseUsage(
+  userId: string,
+  usage: UsageType,
+  month = getTaipeiUsageMonth(),
+): Promise<void> {
+  const admin = getSupabaseAdmin();
+  const { error } = await admin.rpc('release_usage_counter', {
+    p_user_id: userId,
+    p_month: month,
+    p_column: COLUMN[usage],
+  });
+  if (error && !isMissingSupabaseSchemaError(error)) throw error;
+}

@@ -18,6 +18,11 @@ function bool(key: string, fallback = false): boolean {
 }
 
 export const serverEnv = {
+  publicAppUrl:
+    process.env.PUBLIC_APP_URL ??
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : 'https://holy-domain-fortune-telling.vercel.app'),
   supabaseUrl: process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
   supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY ?? '',
@@ -51,14 +56,14 @@ export const serverEnv = {
     webhookId: process.env.PAYPAL_WEBHOOK_ID ?? '',
     env: (process.env.PAYPAL_ENV ?? 'sandbox') as 'sandbox' | 'live',
     plan99: {
-      id: process.env.PAYPAL_PLAN_99_ID ?? 'pro_monthly',
+      id: process.env.PAYPAL_PLAN_99_ID ?? '',
       priceTwd: num('PAYPAL_PLAN_99_PRICE_TWD', 99),
       link:
         process.env.PAYPAL_PLAN_99_LINK ??
         'https://www.paypal.com/ncp/payment/WXRQLYEH8TSFJ',
     },
     plan299: {
-      id: process.env.PAYPAL_PLAN_299_ID ?? 'master_monthly',
+      id: process.env.PAYPAL_PLAN_299_ID ?? '',
       priceTwd: num('PAYPAL_PLAN_299_PRICE_TWD', 299),
       link:
         process.env.PAYPAL_PLAN_299_LINK ??

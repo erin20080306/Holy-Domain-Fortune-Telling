@@ -21,6 +21,7 @@ export function AuthScreen() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const checkoutPlan = params.get('checkout');
 
   const validPhone = (v: string) => /^[+()\-\s\d]{7,20}$/.test(v);
   const validName = (v: string) => /^[\u4e00-\u9fff a-zA-Z]+$/.test(v);
@@ -68,6 +69,10 @@ export function AuthScreen() {
     if (isAdminLogin) {
       setAdminSession();
       nav('/admin');
+      return;
+    }
+    if (checkoutPlan === 'pro_monthly' || checkoutPlan === 'master_monthly') {
+      nav(`/plans?checkout=${checkoutPlan}`);
       return;
     }
     nav('/app');

@@ -25,7 +25,6 @@ export type SubscriptionAction =
 export function mapEventTypeToAction(eventType: string): SubscriptionAction {
   switch (eventType) {
     case 'PAYMENT.SALE.COMPLETED':
-    case 'CHECKOUT.ORDER.APPROVED':
     case 'CHECKOUT.ORDER.COMPLETED':
     case 'BILLING.SUBSCRIPTION.ACTIVATED':
     case 'PAYMENT.CAPTURE.COMPLETED':
