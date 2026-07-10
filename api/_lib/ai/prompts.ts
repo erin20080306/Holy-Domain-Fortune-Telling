@@ -5,6 +5,11 @@ import {
   CHINESE_HOUR_RULE_TEXT,
 } from '../../../shared/chineseTime.js';
 import { buildFortuneChartData, formatFortuneChartForPrompt } from '../../../shared/fortuneChart.js';
+import {
+  DEEP_REPORT_LENGTH_LABEL,
+  DEEP_REPORT_MAX_CHARS,
+  DEEP_REPORT_MIN_CHARS,
+} from '../../../shared/reportSpec.js';
 
 export interface ChatTurn {
   role: 'user' | 'assistant';
@@ -19,6 +24,7 @@ export interface ReadingInputs {
   birth_date?: string; // YYYY-MM-DD
   birth_time?: string; // HH:mm
   birth_place?: string;
+  birth_timezone?: string;
   report_context?: string;
   depth?: 'short' | 'premium';
   mode?: 'reading' | 'chat';
@@ -86,7 +92,7 @@ const CATEGORY_GUIDANCE: Record<string, string[]> = {
     '內容涵蓋本命生肖性格氣質、年度沖合刑害、人際與工作節奏。',
   ],
   astro: [
-    '西洋占星以陽曆生日與出生時間為主；若缺出生地或時間，需說明上升與宮位只能保守判讀。',
+    '西洋占星以陽曆生日、出生時間、出生地與時區為主；若資料不足或系統未提供精密行星盤，需說明上升、宮位與行運只能保守判讀。',
     '內容涵蓋太陽星座性格、情緒需求、人際互動、職涯表現與近期行動建議。',
   ],
   tarot: [
@@ -118,7 +124,7 @@ const CATEGORY_GUIDANCE: Record<string, string[]> = {
     '內容涵蓋核心數字性格、人生課題、關係模式、天賦盲點與工作節奏。',
   ],
   humandesign: [
-    '人類圖需精準出生時間與出生地；若資料不足，請以能量與決策風格做保守解讀。',
+    '人類圖需精準出生時間、出生地與時區；若系統未提供完整圖體資料，不可虛構類型、權威、人生角色、通道或閘門。',
     '內容涵蓋性格能量、決策權威、互動模式、壓力反應與工作環境建議。',
   ],
 };
@@ -158,6 +164,7 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
       birthDate: inputs.birth_date,
       birthTime: inputs.birth_time,
       birthPlace: inputs.birth_place,
+      birthTimezone: inputs.birth_timezone,
     });
     lines.push(`【對話定位】針對使用者的命盤、AI短讀與深度報告進行追問，協助把性格、感情、事業、財運與近期選擇看得更清楚。`);
     lines.push(`【目前命理項目】${meta.name}`);
@@ -184,10 +191,10 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
   const formatRule = premium
     ? [
         '【輸出層級】專業深度報告。這是付費訂閱內容，必須明顯高於短讀：不是摘要、不是通則、不是幾段文字加表格。',
-        '請寫一篇約 7600–11000 字、結構完整、文字厚實的專業命理老師深度書面報告；若輸出上限不足，優先保留判讀依據、性格分析、事業財運、感情人際與可執行建議。',
+        `請寫一篇${DEEP_REPORT_LENGTH_LABEL}、結構完整、文字厚實的專業命理老師深度書面報告。正文應落在 ${DEEP_REPORT_MIN_CHARS}–${DEEP_REPORT_MAX_CHARS} 個繁體中文字附近，不可用大量重複句灌水。`,
         '寫法要像付費命理老師交付的正式報告：先校盤、再論本命格局、再逐項細論，最後給時間節奏與具體調整策略。',
         '每一節都必須引用「系統排盤資料」中的具體依據，例如四柱、日主、五行分布、大運、命宮、主星、宮位、四化、生肖或生命靈數；資料不足時才明確說明保守判讀，不能用空泛心理分析取代命理依據。',
-        '務必依序使用以下中文小節標題，每節先寫 5–9 段深入文字，再附 1 個 Markdown 表格。',
+        '務必依序使用以下中文小節標題，每節先寫 3–6 段深入文字，再附 1 個 Markdown 表格。',
         '一、命盤資料校對',
         '二、性格底盤、優勢天賦與盲點',
         '三、事業／學業與工作定位',
@@ -197,9 +204,9 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
         '七、近期三個月節奏與流年提醒',
         '八、開運策略與行動清單',
         '第一節必須列出算命者資料，並逐項校對國曆、農曆、時辰、八字四柱或紫微命盤資料；不可只說「資料正確」，也不可跳過資料不足的提醒。',
-        '第二節「性格底盤、優勢天賦與盲點」至少 1200–1700 字，需寫得像專業命理老師在做本命性格剖析，包含外顯性格、內在需求、壓力反應、關係模式、成熟課題與容易反覆出現的人生模式。',
+        '第二節「性格底盤、優勢天賦與盲點」至少 800–1100 字，需寫得像專業命理老師在做本命性格剖析，包含外顯性格、內在需求、壓力反應、關係模式、成熟課題與容易反覆出現的人生模式。',
         '事業、財運、感情三節都要拆成「先天傾向」「容易遇到的情境」「近期可操作策略」「風險避忌」四層，不可只給形容詞。',
-        '每個表格固定使用 3 欄：面向｜命盤觀察｜具體建議；每列內容 65–140 字，至少 6 列。',
+        '每個表格固定使用 3 欄：面向｜命盤觀察｜具體建議；每列內容 45–100 字，每表 4–6 列。',
         '表格內容要像命理老師的診斷摘要：左欄寫議題，中欄引用盤面或命理依據，右欄給明確行動、避忌或調整方法。',
         '至少加入 2 個「老師提醒」段落，用自然段落寫出使用者最該注意的盲點與轉運關鍵，不要放在表格裡草草帶過。',
         '整篇報告必須貼近使用者提問；不要堆砌吉凶詞，需包含具體情境、判斷依據、時間節奏、風險提醒與可執行步驟。',
@@ -245,6 +252,7 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
     birthDate: inputs.birth_date,
     birthTime: inputs.birth_time,
     birthPlace: inputs.birth_place,
+    birthTimezone: inputs.birth_timezone,
   });
   parts.push(`【服務項目】${meta.name}`);
   parts.push(`【解讀重點】${meta.focus}`);
@@ -255,8 +263,8 @@ export function buildPrompt(inputs: ReadingInputs): { system: string; user: stri
   );
   parts.push(
     tarotReading
-      ? '【短讀開頭要求】開頭請先用一行列「算命者資料」，包含姓名、性別、出生國曆、出生農曆與時辰；未提供的欄位請標示「未提供」。'
-      : '【報告開頭要求】正文第一節一開始必須先列「算命者資料」，包含姓名、性別、出生國曆、出生農曆、出生時間、命理時辰；未提供的欄位請標示「未提供」。',
+      ? '【短讀開頭要求】開頭請先用一行列「算命者資料」，包含姓名、性別、出生國曆、出生農曆、時辰、出生地與時區；未提供的欄位請標示「未提供」。'
+      : '【報告開頭要求】正文第一節一開始必須先列「算命者資料」，包含姓名、性別、出生國曆、出生農曆、出生時間、命理時辰、出生地與時區；未提供的欄位請標示「未提供」。',
   );
   parts.push(formatFortuneChartForPrompt(chartData));
   parts.push(`【時辰校正】十二時辰分界為：${CHINESE_HOUR_RULE_TEXT}。若系統已提供命理時辰，請直接採用，不可把 03:00-04:59 誤判為丑時。`);

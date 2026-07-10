@@ -5,7 +5,7 @@ export const PRODUCT_NAMES = {
   shortReading: '命理短解讀',
   dailyGuidance: '今日指引',
   premiumAnalysis: '司夜深度分析',
-  premiumReport: '3,000 字完整命理報告',
+  premiumReport: '4,500–6,500 字專業深度命理報告',
   premiumChat: '命理老師',
   premiumChatAlt: '司夜進階對話',
   bazi: '八字排盤服務',

@@ -24,6 +24,7 @@ export interface ZiweiPalace {
 }
 
 export interface ZiweiChart {
+  calculationRule: string;
   solarDate: string;
   lunarDate: string;
   chineseDate: string;
@@ -124,8 +125,15 @@ export function buildZiweiChart(input: {
   const gender = genderForZiwei(input.gender);
   if (!solarDate || timeIndex === null || !gender) return null;
 
+  astro.config({
+    dayDivide: 'forward',
+    yearDivide: 'normal',
+    horoscopeDivide: 'normal',
+    algorithm: 'default',
+  });
   const astrolabe = astro.bySolar(solarDate, timeIndex, gender, true, 'zh-TW');
   return {
+    calculationRule: '通行安星法、農曆年分界、晚子時換日（23:00 起按次日）、閏月修正',
     solarDate: astrolabe.solarDate,
     lunarDate: astrolabe.lunarDate,
     chineseDate: astrolabe.chineseDate,
@@ -188,6 +196,7 @@ export function formatZiweiDetails(chart: ZiweiChart): string {
 
   return [
     `命宮地支：${chart.soulPalaceBranch}；身宮地支：${chart.bodyPalaceBranch}`,
+    `排盤規則：${chart.calculationRule}`,
     `命主：${chart.soul}；身主：${chart.body}；五行局：${chart.fiveElementsClass}`,
     `紫微農曆：${chart.lunarDate}；干支日期：${chart.chineseDate}；時辰：${chart.time}（${chart.timeRange}）`,
     ...palaceLines,

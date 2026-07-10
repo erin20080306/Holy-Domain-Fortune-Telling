@@ -26,6 +26,13 @@ export interface BaziLuckPeriod {
 }
 
 export interface BaziChart {
+  lunarDate: {
+    year: number;
+    month: number;
+    day: number;
+    isLeapMonth: boolean;
+  };
+  calculationRule: string;
   pillars: BaziPillar[];
   dayMaster: string;
   dayMasterElement: string;
@@ -165,6 +172,9 @@ export function buildBaziChart(input: {
   );
   const lunar = solar.getLunar();
   const eightChar = lunar.getEightChar();
+  // Sect 1 uses 23:00 as the next day boundary, matching the ziwei engine's
+  // explicit late-rat-hour forward rule.
+  eightChar.setSect(1);
 
   const pillars: BaziPillar[] = [
     pillar(
@@ -243,6 +253,13 @@ export function buildBaziChart(input: {
     : [];
 
   return {
+    lunarDate: {
+      year: lunar.getYear(),
+      month: Math.abs(lunar.getMonth()),
+      day: lunar.getDay(),
+      isLeapMonth: lunar.getMonth() < 0,
+    },
+    calculationRule: '節氣定年月柱、晚子時換日（23:00 起按次日）、當地鐘錶時間',
     pillars,
     dayMaster: eightChar.getDayGan(),
     dayMasterElement: eightChar.getDayWuXing().charAt(0),
@@ -299,6 +316,7 @@ export function formatBaziDetails(chart: BaziChart): string {
   return [
     ...pillarLines,
     `日主：${chart.dayMaster}${chart.dayMasterElement}`,
+    `排盤規則：${chart.calculationRule}`,
     `五行分布：${formatBaziWuXing(chart)}`,
     `命宮：${chart.mingGong}（${chart.mingGongNaYin}）；身宮：${chart.shenGong}（${chart.shenGongNaYin}）`,
     `胎元：${chart.taiYuan}（${chart.taiYuanNaYin}）；胎息：${chart.taiXi}（${chart.taiXiNaYin}）`,

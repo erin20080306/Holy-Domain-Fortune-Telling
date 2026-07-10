@@ -18,17 +18,33 @@ const PLAN_PROMPT_DISMISS_KEY = 'mystic.planPrompt.dismissedSession';
 const ACTIVE_PAID_STATUSES = new Set(['active', 'manual_active']);
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1));
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => String(i + 1));
+const BIRTH_TIMEZONES = [
+  ['Asia/Taipei', '台灣（Asia/Taipei）'],
+  ['Asia/Hong_Kong', '香港（Asia/Hong Kong）'],
+  ['Asia/Shanghai', '中國（Asia/Shanghai）'],
+  ['Asia/Singapore', '新加坡（Asia/Singapore）'],
+  ['Asia/Tokyo', '日本（Asia/Tokyo）'],
+  ['Asia/Seoul', '韓國（Asia/Seoul）'],
+  ['Asia/Bangkok', '泰國（Asia/Bangkok）'],
+  ['Australia/Sydney', '雪梨（Australia/Sydney）'],
+  ['Europe/London', '倫敦（Europe/London）'],
+  ['America/New_York', '紐約（America/New York）'],
+  ['America/Los_Angeles', '洛杉磯（America/Los Angeles）'],
+] as const;
 const CHART_SUMMARY_LABELS = [
   '生肖',
   '農曆年干支',
   '時辰地支',
   '生命靈數',
+  '農曆交叉校驗',
   '八字四柱',
   '八字日主',
   '八字五行分布',
   '八字大運起運',
+  '八字排盤規則',
   '紫微命宮',
   '紫微命宮主星',
+  '紫微排盤規則',
 ];
 const CHAT_SUGGESTIONS = ['追問性格盲點', '追問感情互動', '追問事業方向', '整理近期行動'];
 const MAX_CHAT_CONTEXT_CHARS = 2600;
@@ -775,6 +791,8 @@ export function DashboardScreen() {
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
   const [birthTime, setBirthTime] = useState('');
+  const [birthPlace, setBirthPlace] = useState('');
+  const [birthTimezone, setBirthTimezone] = useState('Asia/Taipei');
   const [chatOpen, setChatOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [savedReadingId, setSavedReadingId] = useState<string | null>(null);
@@ -798,6 +816,8 @@ export function DashboardScreen() {
     gender,
     birthDate: composedBirthDate,
     birthTime,
+    birthPlace,
+    birthTimezone,
   });
   const chartSummaryFacts = fortuneChartData.facts.filter(
     (fact) =>
@@ -849,6 +869,8 @@ export function DashboardScreen() {
     setBirthMonth(dateParts[1] ? String(Number(dateParts[1])) : '');
     setBirthDay(dateParts[2] ? String(Number(dateParts[2])) : '');
     setBirthTime(snapshot.birth_time ?? '');
+    setBirthPlace(snapshot.birth_place ?? '');
+    setBirthTimezone(snapshot.birth_timezone ?? 'Asia/Taipei');
     setResult(reading.content);
     setResultKind('premium');
     setSavedReadingId(reading.id);
@@ -897,6 +919,8 @@ export function DashboardScreen() {
         gender: gender || undefined,
         birth_date: composedBirthDate,
         birth_time: birthTime || undefined,
+        birth_place: birthPlace.trim() || undefined,
+        birth_timezone: birthTimezone,
       });
       if (res?.ok) {
         setResult(res.content);
@@ -947,7 +971,7 @@ export function DashboardScreen() {
               </div>
               <div className="relative z-10 mt-auto">
                 <h3 className="text-base font-light text-slate-100 tracking-widest mb-1">{cat.name}</h3>
-                <p className="text-[8px] text-[#A89882]/80 font-semibold tracking-[0.1em]">{cat.subtitle}</p>
+                <p className="text-[10px] leading-4 text-[#A89882]/80 font-semibold tracking-[0.08em] break-words">{cat.subtitle}</p>
               </div>
             </div>
           );
@@ -1111,6 +1135,34 @@ export function DashboardScreen() {
                   </select>
                 </label>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生地（城市）</span>
+                  <input
+                    type="text"
+                    value={birthPlace}
+                    onChange={(e) => setBirthPlace(e.target.value)}
+                    placeholder="例如：台北市"
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors placeholder-white/30"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-[10px] text-[#A89882]/80 tracking-widest pl-1">出生地時區</span>
+                  <select
+                    value={birthTimezone}
+                    onChange={(e) => setBirthTimezone(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className="w-full bg-black/40 border border-white/15 rounded-2xl px-4 py-3 text-white text-base md:text-sm font-light tracking-wider focus:outline-none focus:border-[#A89882] transition-colors"
+                  >
+                    {BIRTH_TIMEZONES.map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <p className="px-1 text-[11px] font-light leading-6 tracking-wide text-white/40">
+                出生時間請填當地鐘錶時間；出生地與時區會寫入校盤資料。真太陽時仍需精確經度才能另行校正。
+              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -1219,6 +1271,12 @@ export function DashboardScreen() {
                 <div className="text-[10px] text-white/45 tracking-[0.18em]">生命靈數</div>
                 <div className="mt-0.5 text-slate-100 break-words">{lifePathFact}</div>
               </div>
+              <div>
+                <div className="text-[10px] text-white/45 tracking-[0.18em]">出生地 / 時區</div>
+                <div className="mt-0.5 text-slate-100 break-words">
+                  {birthPlace || '未提供'} / {birthTimezone}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1322,6 +1380,8 @@ export function DashboardScreen() {
             gender={gender || undefined}
             birthDate={composedBirthDate}
             birthTime={birthTime || undefined}
+            birthPlace={birthPlace.trim() || undefined}
+            birthTimezone={birthTimezone}
             reportContext={compactChatContext(result, resultKind)}
           />,
           document.body,
@@ -1351,6 +1411,8 @@ function ChatPanel({
   gender,
   birthDate,
   birthTime,
+  birthPlace,
+  birthTimezone,
   reportContext,
 }: {
   onClose: () => void;
@@ -1360,6 +1422,8 @@ function ChatPanel({
   gender?: string;
   birthDate?: string;
   birthTime?: string;
+  birthPlace?: string;
+  birthTimezone?: string;
   reportContext?: string;
 }) {
   const [messages, setMessages] = useState<ChatMsg[]>([
@@ -1408,6 +1472,8 @@ function ChatPanel({
         gender,
         birth_date: birthDate,
         birth_time: birthTime,
+        birth_place: birthPlace,
+        birth_timezone: birthTimezone,
         report_context: reportContext,
       });
       setMessages((m) => [

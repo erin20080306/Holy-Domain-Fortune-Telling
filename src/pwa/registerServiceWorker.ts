@@ -4,7 +4,7 @@ import { clientEnv } from '../lib/env';
 export interface SwHandlers {
   onNeedRefresh?: () => void;
   onOfflineReady?: () => void;
-  autoReloadOnUpdate?: boolean;
+  autoReloadOnUpdate?: boolean | (() => boolean);
 }
 
 // Registers the service worker in production only. In dev we never force SW
@@ -25,7 +25,11 @@ export function registerServiceWorker(handlers: SwHandlers = {}): (() => void) |
     immediate: true,
     onNeedRefresh: () => {
       handlers.onNeedRefresh?.();
-      if (handlers.autoReloadOnUpdate !== false) {
+      const shouldAutoReload =
+        typeof handlers.autoReloadOnUpdate === 'function'
+          ? handlers.autoReloadOnUpdate()
+          : handlers.autoReloadOnUpdate !== false;
+      if (shouldAutoReload) {
         window.setTimeout(applyUpdate, 250);
       }
     },

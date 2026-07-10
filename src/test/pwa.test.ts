@@ -24,6 +24,7 @@ describe('PWA assets', () => {
 
   it('offline.html exists', () => {
     expect(existsSync('public/offline.html')).toBe(true);
+    expect(existsSync('public/guide.webp')).toBe(true);
   });
 
   it('index.html has iOS + PWA meta tags', () => {
@@ -52,6 +53,8 @@ describe('service worker never caches private routes', () => {
     for (const p of ['api', 'auth', 'admin', 'payments', 'paypal']) {
       expect(cfg).toContain(p);
     }
+    expect(cfg).toContain('DashboardScreen-*.js');
+    expect(cfg).toContain('mystic-route-scripts');
   });
 });
 

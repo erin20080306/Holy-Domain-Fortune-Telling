@@ -22,6 +22,7 @@ export interface FortuneChartInput {
   birthDate?: string;
   birthTime?: string;
   birthPlace?: string;
+  birthTimezone?: string;
 }
 
 export interface FortuneChartFact {
@@ -110,8 +111,9 @@ function categoryNotes(
         return ['八字四柱需完整出生日期與出生時間；資料未齊時只能做保守通則解讀。'];
       }
       return bazi
-        ? [
+          ? [
             '八字四柱已由系統排盤引擎依節氣、日柱與出生時辰排出，解讀時必須以系統四柱為準。',
+            '八字採晚子時換日規則；23:00-23:59 會按次日干支計算。',
             bazi.luckDirection
               ? '大運順逆、起運時間與大運干支已由系統排出，可作為報告判讀依據。'
               : '使用者未提供性別，系統只能排出四柱，暫不排大運順逆與起運。',
@@ -122,8 +124,9 @@ function categoryNotes(
         return ['紫微斗數完整排盤需出生日期、出生時間與性別；資料未齊時不可虛構十二宮或主星落點。'];
       }
       return ziwei
-        ? [
+          ? [
             '紫微十二宮、命宮、身宮、五行局、主星、輔星與四化已由系統排盤引擎產生，解讀時必須以系統星曜落宮為準。',
+            '紫微採通行安星法與晚子時換日規則；23:00-23:59 會按次日盤處理。',
             '紫微斗數流派眾多；本系統目前使用通行排盤法，若使用者指定流派，需再另行校盤。',
           ]
         : ['紫微排盤資料無法產生，請提醒使用者確認出生日期、出生時間與性別格式。'];
@@ -150,6 +153,7 @@ export function buildFortuneChartData(input: FortuneChartInput): FortuneChartDat
     { label: '性別', value: clean(input.gender) ?? '未提供', source: 'user' },
     { label: '出生國曆', value: formatSolarDate(input.birthDate) ?? '未提供', source: 'user' },
     { label: '出生地', value: clean(input.birthPlace) ?? '未提供', source: 'user' },
+    { label: '出生時區', value: clean(input.birthTimezone) ?? '未提供', source: 'user' },
   ];
 
   const lunar = input.birthDate ? solarToLunar(input.birthDate) : null;
@@ -207,6 +211,21 @@ export function buildFortuneChartData(input: FortuneChartInput): FortuneChartDat
   });
 
   if (bazi) {
+    const lunarMatchesBazi = Boolean(
+      lunar &&
+        lunar.year === bazi.lunarDate.year &&
+        lunar.month === bazi.lunarDate.month &&
+        lunar.day === bazi.lunarDate.day &&
+        lunar.isLeapMonth === bazi.lunarDate.isLeapMonth,
+    );
+    addFact(
+      facts,
+      '農曆交叉校驗',
+      lunarMatchesBazi
+        ? '一致：農曆換算與八字排盤引擎結果相同'
+        : '警示：農曆換算與八字排盤引擎結果不一致，請停止解讀並重新校盤',
+    );
+    addFact(facts, '八字排盤規則', bazi.calculationRule);
     addFact(facts, '八字四柱', formatBaziPillars(bazi));
     addFact(facts, '八字日主', `${bazi.dayMaster}${bazi.dayMasterElement}`);
     addFact(facts, '八字五行分布', formatBaziWuXing(bazi));
@@ -230,6 +249,7 @@ export function buildFortuneChartData(input: FortuneChartInput): FortuneChartDat
   }
 
   if (ziwei) {
+    addFact(facts, '紫微排盤規則', ziwei.calculationRule);
     const soulPalace = findZiweiPalace(ziwei, '命宮');
     addFact(
       facts,

@@ -1,6 +1,8 @@
 // Central plan + entitlement definitions. Shared by the frontend (display only)
 // and the backend (enforcement). Limits can be overridden via env on the server.
 
+import { DEEP_REPORT_LENGTH_LABEL } from './reportSpec.js';
+
 export type PlanId = 'free' | 'pro_monthly' | 'master_monthly';
 
 export type SubscriptionStatus =
@@ -76,7 +78,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
       '星座 / 生肖 / 生命靈數',
       '每月 3 次命理短解讀',
       '基礎命理功能',
-      '不含 3,000 字（約 2–3 頁 A4）深度命理報告',
+      `不含${DEEP_REPORT_LENGTH_LABEL}深度命理報告`,
     ],
     buttonText: '開始免費使用',
   },
@@ -85,7 +87,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     title: '星河行者',
     price: 'NT$99 / 月',
     features: [
-      '每月 2 份 3,000 字（約 2–3 頁 A4）深度命理報告',
+      `每月 2 份${DEEP_REPORT_LENGTH_LABEL}深度命理報告`,
       '每月 30 次命理短解讀',
       '每月 30 次塔羅神諭短讀（80–150 字）',
       '每月 30 則命盤／報告追問對話',
@@ -100,7 +102,7 @@ export const PLAN_DISPLAY: PlanDisplay[] = [
     title: '宇宙共鳴',
     price: 'NT$299 / 月',
     features: [
-      '每月 8 份 3,000 字（約 2–3 頁 A4）深度命理報告',
+      `每月 8 份${DEEP_REPORT_LENGTH_LABEL}深度命理報告`,
       '每月 100 次命理短解讀',
       '每月 50 次塔羅神諭短讀（80–150 字）',
       '每月 150 則命盤／報告追問對話',

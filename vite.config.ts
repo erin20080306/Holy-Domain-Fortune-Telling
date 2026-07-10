@@ -16,7 +16,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
         // Large decorative art (引路人) is served via the runtime image cache
         // below instead of being precached in the app shell.
-        globIgnores: ['**/guide.png'],
+        globIgnores: [
+          '**/guide.png',
+          '**/guide.webp',
+          '**/DashboardScreen-*.js',
+        ],
         // Always take control of the page and purge stale precaches so a new
         // deployment applies immediately without a manual update prompt.
         skipWaiting: true,
@@ -36,6 +40,17 @@ export default defineConfig({
             urlPattern:
               /^https?:\/\/[^/]+\/(api|auth|admin|payments|paypal)\//,
             handler: 'NetworkOnly',
+          },
+          {
+            // Large route chunks are downloaded only when the user enters the
+            // feature area, then kept for future PWA/offline use.
+            urlPattern: ({ request, url }) =>
+              request.destination === 'script' && url.pathname.startsWith('/assets/'),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'mystic-route-scripts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
           },
           {
             // Serve images from cache for speed but revalidate in the

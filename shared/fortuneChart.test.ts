@@ -19,11 +19,29 @@ describe('fortune chart data', () => {
     expect(factValue('命理時辰')).toBe('寅時（03:00-04:59）');
     expect(factValue('時辰地支')).toBe('寅（時支）');
     expect(factValue('生命靈數')).toContain('8');
+    expect(factValue('農曆交叉校驗')).toContain('一致');
     expect(factValue('八字四柱')).toBe('年柱癸亥｜月柱戊午｜日柱丁卯｜時柱壬寅');
     expect(factValue('八字日主')).toBe('丁火');
     expect(factValue('紫微命宮')).toContain('命宮在卯');
     expect(factValue('紫微命宮')).toContain('五行局水二局');
     expect(factValue('紫微命宮主星')).toContain('太陰(陷)[科]');
+  });
+
+  it('uses the same late-rat-hour day boundary in bazi and ziwei', () => {
+    const chart = buildFortuneChartData({
+      category: 'ziwei',
+      birthDate: '1992-11-22',
+      birthTime: '23:30',
+      birthPlace: '台北市',
+      birthTimezone: 'Asia/Taipei',
+      gender: '男',
+    });
+
+    expect(chart.facts.find((fact) => fact.label === '八字四柱')?.value).toContain('日柱癸卯');
+    expect(chart.ziwei?.chineseDate).toContain('癸卯');
+    expect(chart.ziwei?.time).toBe('晚子時');
+    expect(chart.facts.find((fact) => fact.label === '出生地')?.value).toBe('台北市');
+    expect(chart.facts.find((fact) => fact.label === '出生時區')?.value).toBe('Asia/Taipei');
   });
 
   it('adds complete ziwei palace facts to the prompt when required data exists', () => {

@@ -53,6 +53,7 @@ export async function generateReading(
     birth_date: typeof body.birth_date === 'string' ? body.birth_date : undefined,
     birth_time: typeof body.birth_time === 'string' ? body.birth_time : undefined,
     birth_place: typeof body.birth_place === 'string' ? body.birth_place : undefined,
+    birth_timezone: typeof body.birth_timezone === 'string' ? body.birth_timezone : undefined,
     report_context: typeof body.report_context === 'string' ? body.report_context : undefined,
     depth: premium ? 'premium' : 'short',
     mode: usage === 'premium_chat' ? 'chat' : 'reading',

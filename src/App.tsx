@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import {
   BrowserRouter,
   Routes,
@@ -7,15 +7,6 @@ import {
   useLocation,
 } from 'react-router-dom';
 import { AuthProvider, useAuth } from './state/AuthContext';
-import { OpeningScreen } from './screens/OpeningScreen';
-import { GuideScreen } from './screens/GuideScreen';
-import { AuthScreen } from './screens/AuthScreen';
-import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
-import { PlansScreen } from './screens/PlansScreen';
-import { DashboardScreen } from './screens/DashboardScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { AdminDashboard } from './screens/AdminDashboard';
-import { AuditLogScreen } from './screens/AuditLogScreen';
 import { SplitLayout } from './components/SplitLayout';
 import { InstallBanner } from './components/InstallBanner';
 import { UpdateBanner } from './components/UpdateBanner';
@@ -24,6 +15,42 @@ import { registerServiceWorker } from './pwa/registerServiceWorker';
 import { subscribeNetworkStatus } from './pwa/networkStatus';
 import { applyPerfClass } from './lib/device/performanceMode';
 import { isAdminSession } from './lib/adminSession';
+
+const OpeningScreen = lazy(() =>
+  import('./screens/OpeningScreen').then((module) => ({ default: module.OpeningScreen })),
+);
+const GuideScreen = lazy(() =>
+  import('./screens/GuideScreen').then((module) => ({ default: module.GuideScreen })),
+);
+const AuthScreen = lazy(() =>
+  import('./screens/AuthScreen').then((module) => ({ default: module.AuthScreen })),
+);
+const ResetPasswordScreen = lazy(() =>
+  import('./screens/ResetPasswordScreen').then((module) => ({ default: module.ResetPasswordScreen })),
+);
+const PlansScreen = lazy(() =>
+  import('./screens/PlansScreen').then((module) => ({ default: module.PlansScreen })),
+);
+const DashboardScreen = lazy(() =>
+  import('./screens/DashboardScreen').then((module) => ({ default: module.DashboardScreen })),
+);
+const SettingsScreen = lazy(() =>
+  import('./screens/SettingsScreen').then((module) => ({ default: module.SettingsScreen })),
+);
+const AdminDashboard = lazy(() =>
+  import('./screens/AdminDashboard').then((module) => ({ default: module.AdminDashboard })),
+);
+const AuditLogScreen = lazy(() =>
+  import('./screens/AuditLogScreen').then((module) => ({ default: module.AuditLogScreen })),
+);
+
+function RouteLoading() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#050508] text-sm tracking-widest text-[#A89882]">
+      載入命理資料中…
+    </div>
+  );
+}
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -43,6 +70,10 @@ function Shell() {
     applyPerfClass();
     const update = registerServiceWorker({
       onNeedRefresh: () => setNeedRefresh(true),
+      // Do not reload while a user may be filling birth data or reading a
+      // report. Those screens keep the update banner for an explicit tap.
+      autoReloadOnUpdate: () =>
+        !['/app', '/auth', '/reset-password'].includes(window.location.pathname),
     });
     if (update) setDoUpdate(() => update);
     return subscribeNetworkStatus(setOnline);
@@ -53,6 +84,7 @@ function Shell() {
       <div className="app-shell" style={{ paddingBottom: 0, minHeight: 0 }}>
         <OfflineBanner online={online} />
       </div>
+      <Suspense fallback={<RouteLoading />}>
       <Routes>
         <Route path="/" element={<OpeningScreen />} />
         <Route
@@ -125,6 +157,7 @@ function Shell() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
 
       <InstallBanner />
       <UpdateBanner visible={needRefresh} onUpdate={() => doUpdate?.()} />

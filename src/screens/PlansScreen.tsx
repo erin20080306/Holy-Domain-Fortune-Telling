@@ -9,6 +9,7 @@ import { beginPaypalCheckout } from '../lib/checkout';
 import { isStandalone } from '../pwa/pwaInstallPrompt';
 import { useAuth } from '../state/AuthContext';
 import { api } from '../lib/api';
+import { DEEP_REPORT_LENGTH_LABEL, DEEP_REPORT_SECTIONS } from '@shared/reportSpec';
 
 function detectPlatform(): Platform {
   const cap = (window as any).Capacitor;
@@ -69,7 +70,7 @@ export function PlansScreen() {
   return (
     <div className="w-full animate-[fadeIn_0.5s_ease-out]">
       <div className="text-center mb-10">
-        <p className="text-[#A89882] text-[10px] tracking-[0.3em] font-semibold mb-2 flex justify-center gap-2 items-center">
+        <p className="text-[#A89882] text-xs tracking-[0.22em] font-semibold mb-2 flex justify-center gap-2 items-center">
           <span>解鎖命運</span>
           <span className="opacity-70">UNLOCK DESTINY</span>
         </p>
@@ -79,7 +80,7 @@ export function PlansScreen() {
         {PLAN_DISPLAY.map((plan) => (
           <div
             key={plan.id}
-            className={`bg-white/[0.02] border border-white/10 rounded-3xl p-6 flex flex-col hover:border-[#A89882]/50 transition-colors ${
+            className={`relative bg-white/[0.02] border border-white/10 rounded-2xl p-6 flex flex-col hover:border-[#A89882]/50 transition-colors ${
               plan.id === 'pro_monthly'
                 ? 'bg-gradient-to-b from-[#A89882]/10 to-transparent border-[#A89882]/40 transform lg:-translate-y-4 shadow-[0_20px_40px_rgba(168,152,130,0.1)]'
                 : ''
@@ -96,14 +97,11 @@ export function PlansScreen() {
             </p>
             <div className="text-3xl text-white font-serif mb-6 border-b border-white/5 pb-6">
               {plan.price}
-              <span className="text-xs text-white/40 font-sans tracking-widest">
-                {plan.id === 'free' ? ' / 永久' : ' / 月'}
-              </span>
             </div>
             <ul className="space-y-4 mb-8 flex-1 text-sm text-slate-300 font-light tracking-widest">
               {plan.features.map((f) => (
-                <li key={f} className="flex gap-3 items-center">
-                  <ChevronLeft size={12} className="text-[#A89882]" />
+                <li key={f} className="flex gap-3 items-start leading-7">
+                  <ChevronLeft size={12} className="mt-2 shrink-0 text-[#A89882]" />
                   {f}
                 </li>
               ))}
@@ -142,19 +140,17 @@ export function PlansScreen() {
           <span className="opacity-70">REPORT CONTENTS</span>
         </p>
         <p className="text-slate-400 text-xs font-light tracking-wider mb-5">
-          每份約 3,000 字（約 2–3 頁 A4），依你選擇的命理項目與提供的資料撰寫，涵蓋以下五大面向：
+          每份{DEEP_REPORT_LENGTH_LABEL}，依你選擇的命理項目與提供的資料撰寫，涵蓋以下八大面向：
         </p>
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-300 font-light tracking-wider">
-          {['整體運勢總論', '事業／學業', '感情／人際', '財運', '近期（3 個月）重點提醒與行動建議'].map(
-            (s, i) => (
+          {DEEP_REPORT_SECTIONS.map((s, i) => (
               <li key={s} className="flex items-center gap-3">
                 <span className="w-5 h-5 shrink-0 rounded-full border border-[#A89882]/40 text-[#A89882] text-[10px] flex items-center justify-center">
                   {i + 1}
                 </span>
                 {s}
               </li>
-            ),
-          )}
+            ))}
         </ul>
       </div>
 

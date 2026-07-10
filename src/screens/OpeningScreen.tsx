@@ -36,9 +36,11 @@ export function OpeningScreen() {
           </h2>
         </div>
       </div>
-      <div
+      <button
+        type="button"
         onClick={() => nav('/guide')}
-        className={`absolute bottom-16 z-20 flex flex-col items-center cursor-pointer group transition-opacity duration-1000 delay-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute bottom-16 z-20 flex flex-col items-center border-0 bg-transparent p-0 cursor-pointer group transition-opacity duration-1000 delay-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        aria-label="進入 MYSTIC 命理探索"
       >
         <span className="text-white/70 tracking-[0.4em] uppercase mb-5 group-hover:text-white transition-colors duration-300 flex flex-col items-center gap-2">
           <span className="text-lg md:text-xl font-medium tracking-[0.5em] ml-2 drop-shadow-md">進入聖域</span>
@@ -47,7 +49,7 @@ export function OpeningScreen() {
         <div className="w-[1px] h-16 bg-white/10 relative overflow-hidden">
           <div className="w-full h-full bg-gradient-to-b from-transparent via-[#A89882] to-transparent absolute top-[-100%] left-0 animate-[scrollDown_2s_ease-in-out_infinite]"></div>
         </div>
-      </div>
+      </button>
     </div>
   );
 }

@@ -33,6 +33,7 @@ const SNAPSHOT_KEYS = [
   'birth_date',
   'birth_time',
   'birth_place',
+  'birth_timezone',
 ] as const;
 
 function shortString(value: unknown, limit: number): string | undefined {
@@ -122,4 +123,3 @@ export async function deleteDeepReport(userId: string, readingId: string): Promi
   }
   return Boolean(data?.id);
 }
-

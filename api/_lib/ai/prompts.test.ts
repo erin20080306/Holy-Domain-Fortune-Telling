@@ -29,8 +29,8 @@ describe('buildPrompt report tiers', () => {
     expect(prompt.system).toContain('現在輸出的是付費深度報告');
     expect(prompt.system).not.toContain('現在輸出的是 AI 短讀');
     expect(prompt.user).toContain('【輸出層級】專業深度報告');
-    expect(prompt.user).toContain('約 7600–11000 字');
-    expect(prompt.user).toContain('至少 6 列');
+    expect(prompt.user).toContain('約 4,500–6,500 字');
+    expect(prompt.user).toContain('每表 4–6 列');
     expect(prompt.user).toContain('老師提醒');
   });
 

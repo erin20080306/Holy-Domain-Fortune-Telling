@@ -61,15 +61,21 @@ export function SplitLayout({
       {/* 右半部 / 手機上半部：引路人展示區 */}
       <div className={`w-full ${guideSize} md:h-full md:max-h-none md:w-[45%] lg:w-[50%] relative flex items-end justify-center pointer-events-none z-10 md:order-2 shrink-0 bg-gradient-to-b from-transparent to-[#050508]/50 md:bg-none`}>
         <div className="absolute bottom-6 md:bottom-10 w-[64%] h-[52%] bg-amber-500/20 blur-[70px] md:blur-[80px] rounded-full animate-[pulse-gold_4s_ease-in-out_infinite] z-0"></div>
-        <img
-          src="/guide.png"
-          alt="引路人"
-          onError={(e) => {
-            const img = e.currentTarget;
-            if (!img.src.endsWith('/guide.svg')) img.src = '/guide.svg';
-          }}
-          className={`w-full ${guideImageSize} md:h-[85%] md:max-h-none object-contain object-bottom animate-[floatY_5s_ease-in-out_infinite] relative z-10 drop-shadow-2xl`}
-        />
+        <picture className={`w-full ${guideImageSize} md:h-[85%] md:max-h-none relative z-10`}>
+          <source srcSet="/guide.webp" type="image/webp" />
+          <img
+            src="/guide.png"
+            alt="引路人"
+            width="1024"
+            height="1536"
+            decoding="async"
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (!img.src.endsWith('/guide.svg')) img.src = '/guide.svg';
+            }}
+            className="h-full w-full object-contain object-bottom animate-[floatY_5s_ease-in-out_infinite] drop-shadow-2xl"
+          />
+        </picture>
         <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#050508] to-transparent md:hidden z-20"></div>
       </div>
 
