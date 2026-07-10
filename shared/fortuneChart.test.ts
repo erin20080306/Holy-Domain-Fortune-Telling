@@ -19,24 +19,54 @@ describe('fortune chart data', () => {
     expect(factValue('命理時辰')).toBe('寅時（03:00-04:59）');
     expect(factValue('時辰地支')).toBe('寅（時支）');
     expect(factValue('生命靈數')).toContain('8');
+    expect(factValue('八字四柱')).toBe('年柱癸亥｜月柱戊午｜日柱丁卯｜時柱壬寅');
+    expect(factValue('八字日主')).toBe('丁火');
+    expect(factValue('紫微命宮')).toContain('命宮在卯');
+    expect(factValue('紫微命宮')).toContain('五行局水二局');
+    expect(factValue('紫微命宮主星')).toContain('太陰(陷)[科]');
   });
 
-  it('tells the prompt to use chart facts without inventing missing ziwei placements', () => {
+  it('adds complete ziwei palace facts to the prompt when required data exists', () => {
     const chart = buildFortuneChartData({
       category: 'ziwei',
       birthDate: '1983-06-08',
       birthTime: '03:30',
+      gender: '女',
     });
     const promptBlock = formatFortuneChartForPrompt(chart);
 
     expect(promptBlock).toContain('以下資料由程式先行換算');
     expect(promptBlock).toContain('不可自行重算、改寫');
-    expect(promptBlock).toContain('不得虛構主星、四化或宮位落點');
+    expect(promptBlock).toContain('紫微十二宮星曜');
+    expect(promptBlock).toContain('命宮 乙卯');
+    expect(promptBlock).toContain('主星太陰(陷)[科]');
+    expect(promptBlock).toContain('官祿宮 己未（身宮）');
   });
 
-  it('warns bazi readings not to invent full pillars or major luck cycles', () => {
-    const chart = buildFortuneChartData({ category: 'bazi', birthDate: '1983-06-08' });
-    expect(chart.notes.join('\n')).toContain('完整八字四柱');
-    expect(chart.notes.join('\n')).toContain('不得把未提供的四柱或大運寫成確定結果');
+  it('adds complete bazi facts and luck periods when gender is provided', () => {
+    const chart = buildFortuneChartData({
+      category: 'bazi',
+      birthDate: '1983-06-08',
+      birthTime: '03:30',
+      gender: '女',
+    });
+    const promptBlock = formatFortuneChartForPrompt(chart);
+
+    expect(promptBlock).toContain('八字完整排盤');
+    expect(promptBlock).toContain('年柱 癸亥');
+    expect(promptBlock).toContain('大運：順行');
+    expect(promptBlock).toContain('己未：11-20歲');
+    expect(chart.notes.join('\n')).toContain('八字四柱已由系統排盤引擎');
+  });
+
+  it('warns when bazi or ziwei required inputs are missing', () => {
+    const bazi = buildFortuneChartData({ category: 'bazi', birthDate: '1983-06-08' });
+    const ziwei = buildFortuneChartData({
+      category: 'ziwei',
+      birthDate: '1983-06-08',
+      birthTime: '03:30',
+    });
+    expect(bazi.notes.join('\n')).toContain('八字四柱需完整出生日期與出生時間');
+    expect(ziwei.notes.join('\n')).toContain('紫微斗數完整排盤需出生日期、出生時間與性別');
   });
 });

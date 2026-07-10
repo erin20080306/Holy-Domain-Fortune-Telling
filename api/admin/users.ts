@@ -1,8 +1,11 @@
 import { sendJson, type ApiRequest, type ApiResponse } from '../_lib/http.js';
 import { getAuthedUser, isAdmin } from '../_lib/auth.js';
 import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
+import { planLimitsFromEnv } from '../_lib/env.js';
 import { getTaipeiUsageMonth } from '../../shared/usageMonth.js';
+import { effectivePlan } from '../../shared/entitlement.js';
 import { USER_MESSAGES } from '../../shared/productCopy.js';
+import type { PlanId, SubscriptionStatus } from '../../shared/plans.js';
 
 // Paginated admin user list with search/filter. Admin-only (role checked here,
 // never on the frontend). Joins profile + subscription + current-month usage.
@@ -52,23 +55,33 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   const subMap = new Map(((subs ?? []) as any[]).map((s) => [s.user_id, s] as const));
   const quotaMap = new Map(((quotas ?? []) as any[]).map((qm) => [qm.user_id, qm] as const));
+  const limitsByPlan = planLimitsFromEnv();
 
   let rows = ((profiles ?? []) as any[]).map((p) => {
     const s = subMap.get(p.user_id);
     const u = quotaMap.get(p.user_id);
+    const plan = (s?.plan ?? 'free') as PlanId;
+    const status = (s?.status ?? 'none') as SubscriptionStatus;
+    const currentPeriodEnd = s?.current_period_end ?? null;
+    const effective = effectivePlan(plan, status, currentPeriodEnd);
+    const limits = limitsByPlan[effective];
     return {
       user_id: p.user_id,
       created_at: p.created_at,
       display_name: p.display_name,
       email: p.email,
       phone: p.phone,
-      plan: s?.plan ?? 'free',
+      plan,
+      effective_plan: effective,
       source: s?.source ?? 'free',
-      status: s?.status ?? 'none',
-      current_period_end: s?.current_period_end ?? null,
+      status,
+      current_period_end: currentPeriodEnd,
       short_reading_used: u?.free_ai_count ?? 0,
+      short_reading_limit: limits.shortAiPerMonth,
       premium_report_used: u?.premium_report_count ?? 0,
+      premium_report_limit: limits.premiumReportPerMonth,
       premium_chat_used: u?.premium_chat_count ?? 0,
+      premium_chat_limit: limits.premiumChatPerMonth,
       login_count: p.login_count ?? 0,
       last_login_at: p.last_login_at,
       last_login_user_agent: p.last_login_user_agent,

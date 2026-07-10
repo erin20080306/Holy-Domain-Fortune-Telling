@@ -1,6 +1,10 @@
 import { readRawBody, sendJson, type ApiRequest, type ApiResponse } from '../../../_lib/http.js';
 import { getAuthedUser, isAdmin } from '../../../_lib/auth.js';
-import { getSubscription, updateSubscription } from '../../../_lib/services/SubscriptionRepository.js';
+import {
+  ensureSubscription,
+  getSubscription,
+  updateSubscription,
+} from '../../../_lib/services/SubscriptionRepository.js';
 import { writeAuditLog } from '../../../_lib/services/AdminAuditService.js';
 import { getSupabaseAdmin } from '../../../_lib/supabaseAdmin.js';
 import { getTaipeiUsageMonth } from '../../../../shared/usageMonth.js';
@@ -58,7 +62,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
   if (typeof body.admin_note === 'string') patch.admin_note = body.admin_note;
 
-  const before = await getSubscription(targetUserId);
+  const before = (await getSubscription(targetUserId)) ?? (await ensureSubscription(targetUserId));
 
   try {
     const after = await updateSubscription(targetUserId, {

@@ -30,6 +30,27 @@ describe('checkEntitlement - premium reports', () => {
     expect(blocked.reason).toBe('quota_exhausted');
   });
 
+  it('manual admin grants unlock paid AI usage until the period expires', () => {
+    const ok = checkEntitlement({
+      plan: 'pro_monthly',
+      status: 'manual_active',
+      currentPeriodEnd: '2999-01-01T00:00:00.000Z',
+      usage: 'premium_report',
+      used: 0,
+    });
+    const expired = checkEntitlement({
+      plan: 'pro_monthly',
+      status: 'manual_active',
+      currentPeriodEnd: '2000-01-01T00:00:00.000Z',
+      usage: 'premium_report',
+      used: 0,
+    });
+
+    expect(ok.allowed).toBe(true);
+    expect(expired.allowed).toBe(false);
+    expect(expired.reason).toBe('plan_required');
+  });
+
   it('master users get exactly 8 premium reports per month', () => {
     expect(
       checkEntitlement({ plan: 'master_monthly', status: 'active', usage: 'premium_report', used: 7 }).allowed,

@@ -52,6 +52,14 @@ function formatSourceLabel(source: string | null | undefined): string {
   return `${SUBSCRIPTION_SOURCE_LABEL[source] ?? source}（${source}）`;
 }
 
+function formatQuota(used: unknown, limit: unknown): string {
+  const usedNum = Math.max(0, Number(used) || 0);
+  const limitNum = Number(limit);
+  if (!Number.isFinite(limitNum)) return `${usedNum} / ∞`;
+  const remaining = Math.max(0, limitNum - usedNum);
+  return `${usedNum} / ${limitNum}（剩 ${remaining}）`;
+}
+
 function isUserSubscribed(user: any): boolean {
   if (user?.plan === 'free' || !ACTIVE_SUBSCRIPTION_STATUSES.has(user?.status)) return false;
   if (!user?.current_period_end) return true;
@@ -291,13 +299,14 @@ export function AdminDashboard() {
                 {[
                   ['註冊日期', (u.created_at ?? '').slice(0, 10)],
                   ['方案', PLAN_LABEL[(u.plan ?? 'free') as PlanId]],
+                  ['實際套用', PLAN_LABEL[(u.effective_plan ?? u.plan ?? 'free') as PlanId]],
                   ['訂閱', isUserSubscribed(u) ? '已訂閱' : '未訂閱'],
                   ['到期日', formatTaipeiDate(u.current_period_end)],
                   ['狀態', formatStatusLabel(u.status)],
                   ['來源', formatSourceLabel(u.source)],
                   ['電話', u.phone ?? '—'],
-                  ['短解讀', String(u.short_reading_used ?? 0)],
-                  ['報告', String(u.premium_report_used ?? 0)],
+                  ['短解讀', formatQuota(u.short_reading_used, u.short_reading_limit)],
+                  ['報告', formatQuota(u.premium_report_used, u.premium_report_limit)],
                   ['登入', String(u.login_count ?? 0)],
                   ['最後登入', (u.last_login_at ?? '').slice(0, 16).replace('T', ' ') || '—'],
                 ].map(([label, value]) => (
@@ -373,20 +382,31 @@ function EditUserModal({
   const [note, setNote] = useState('');
   const [resetUsage, setResetUsage] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
   const [pwBusy, setPwBusy] = useState(false);
   const [pwMsg, setPwMsg] = useState('');
 
   const save = async () => {
+    setSaveMsg('');
     setBusy(true);
-    await api.admin.updateSubscription(user.user_id, {
-      plan: subscribed ? (plan === 'free' ? 'pro_monthly' : plan) : 'free',
-      status: subscribed ? status : 'none',
-      current_period_end: subscribed && periodEndDate ? taipeiEndOfDayIso(periodEndDate) : null,
-      admin_note: note,
-      reset_month_usage: resetUsage,
-    });
-    setBusy(false);
-    onSaved();
+    try {
+      const res = await api.admin.updateSubscription(user.user_id, {
+        plan: subscribed ? (plan === 'free' ? 'pro_monthly' : plan) : 'free',
+        status: subscribed ? status : 'none',
+        current_period_end: subscribed && periodEndDate ? taipeiEndOfDayIso(periodEndDate) : null,
+        admin_note: note,
+        reset_month_usage: resetUsage,
+      });
+      if (res?.ok) {
+        onSaved();
+      } else {
+        setSaveMsg(res?.message ?? '儲存訂閱失敗，請稍後再試。');
+      }
+    } catch {
+      setSaveMsg('儲存訂閱失敗，請稍後再試。');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const sendReset = async () => {
@@ -537,6 +557,11 @@ function EditUserModal({
           />
           <span className="muted">重置本月額度</span>
         </label>
+        {saveMsg && (
+          <p className="muted" style={{ color: '#fca5a5', fontSize: 12, marginTop: -4 }}>
+            {saveMsg}
+          </p>
+        )}
         <div className="row" style={{ gap: 10 }}>
           <button className="btn" disabled={busy} onClick={() => void save()}>
             儲存

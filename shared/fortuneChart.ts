@@ -1,5 +1,19 @@
 import { formatChineseBirthHour, getChineseBirthHour } from './chineseTime';
 import { formatLunarDateForPrompt, solarToLunar } from './lunarCalendar';
+import {
+  buildBaziChart,
+  formatBaziDetails,
+  formatBaziPillars,
+  formatBaziWuXing,
+  type BaziChart,
+} from './baziChart';
+import {
+  buildZiweiChart,
+  findZiweiPalace,
+  formatZiweiDetails,
+  formatZiweiPalaceSummary,
+  type ZiweiChart,
+} from './ziweiChart';
 
 export interface FortuneChartInput {
   category?: string;
@@ -19,6 +33,8 @@ export interface FortuneChartFact {
 export interface FortuneChartData {
   facts: FortuneChartFact[];
   notes: string[];
+  bazi?: BaziChart;
+  ziwei?: ZiweiChart;
 }
 
 const MASTER_NUMBERS = new Set([11, 22, 33]);
@@ -82,18 +98,35 @@ function buildLifePathNumber(birthDate: string | undefined): string | null {
   return `${reduced.final}（計算式：${formula}）`;
 }
 
-function categoryNotes(category: string | undefined): string[] {
+function categoryNotes(
+  category: string | undefined,
+  bazi: BaziChart | null,
+  ziwei: ZiweiChart | null,
+  input: FortuneChartInput,
+): string[] {
   switch (category) {
     case 'bazi':
-      return [
-        '目前系統已提供可驗證的出生國曆、農曆、生肖、農曆年干支與命理時辰。',
-        '完整八字四柱、節氣月柱、日柱、時柱天干與大運起運歲數尚未由系統排出，解讀時不得把未提供的四柱或大運寫成確定結果。',
-      ];
+      if (!input.birthDate || !input.birthTime) {
+        return ['八字四柱需完整出生日期與出生時間；資料未齊時只能做保守通則解讀。'];
+      }
+      return bazi
+        ? [
+            '八字四柱已由系統排盤引擎依節氣、日柱與出生時辰排出，解讀時必須以系統四柱為準。',
+            bazi.luckDirection
+              ? '大運順逆、起運時間與大運干支已由系統排出，可作為報告判讀依據。'
+              : '使用者未提供性別，系統只能排出四柱，暫不排大運順逆與起運。',
+          ]
+        : ['八字排盤資料無法產生，請提醒使用者確認出生日期與時間格式。'];
     case 'ziwei':
-      return [
-        '目前系統已提供紫微斗數必用的出生農曆生日與命理時辰，解讀時必須直接採用。',
-        '完整紫微十二宮、命宮身宮與星曜落宮尚未由系統排出，解讀時不得虛構主星、四化或宮位落點。',
-      ];
+      if (!input.birthDate || !input.birthTime || !input.gender) {
+        return ['紫微斗數完整排盤需出生日期、出生時間與性別；資料未齊時不可虛構十二宮或主星落點。'];
+      }
+      return ziwei
+        ? [
+            '紫微十二宮、命宮、身宮、五行局、主星、輔星與四化已由系統排盤引擎產生，解讀時必須以系統星曜落宮為準。',
+            '紫微斗數流派眾多；本系統目前使用通行排盤法，若使用者指定流派，需再另行校盤。',
+          ]
+        : ['紫微排盤資料無法產生，請提醒使用者確認出生日期、出生時間與性別格式。'];
     case 'zodiac':
       return ['生肖與農曆年干支由系統依農曆生日換算，不以單純陽曆年份粗判。'];
     case 'numerology':
@@ -104,6 +137,11 @@ function categoryNotes(category: string | undefined): string[] {
     default:
       return ['命理硬資料由系統先行換算，後續解讀必須以這些資料為準，不可自行改寫出生日期、農曆或時辰。'];
   }
+}
+
+function addFact(facts: FortuneChartFact[], label: string, value: string | null | undefined): void {
+  if (!value) return;
+  facts.push({ label, value, source: 'system' });
 }
 
 export function buildFortuneChartData(input: FortuneChartInput): FortuneChartData {
@@ -136,6 +174,16 @@ export function buildFortuneChartData(input: FortuneChartInput): FortuneChartDat
 
   const birthHour = input.birthTime ? formatChineseBirthHour(input.birthTime) : null;
   const birthHourBranch = input.birthTime ? getChineseBirthHour(input.birthTime)?.branch : null;
+  const bazi = buildBaziChart({
+    birthDate: input.birthDate,
+    birthTime: input.birthTime,
+    gender: input.gender,
+  });
+  const ziwei = buildZiweiChart({
+    birthDate: input.birthDate,
+    birthTime: input.birthTime,
+    gender: input.gender,
+  });
   facts.push({
     label: '出生時間',
     value: clean(input.birthTime) ?? '未提供',
@@ -158,17 +206,64 @@ export function buildFortuneChartData(input: FortuneChartInput): FortuneChartDat
     source: 'system',
   });
 
+  if (bazi) {
+    addFact(facts, '八字四柱', formatBaziPillars(bazi));
+    addFact(facts, '八字日主', `${bazi.dayMaster}${bazi.dayMasterElement}`);
+    addFact(facts, '八字五行分布', formatBaziWuXing(bazi));
+    addFact(
+      facts,
+      '八字命宮身宮',
+      `命宮${bazi.mingGong}（${bazi.mingGongNaYin}），身宮${bazi.shenGong}（${bazi.shenGongNaYin}）`,
+    );
+    addFact(
+      facts,
+      '八字大運起運',
+      bazi.luckDirection && bazi.luckStart
+        ? `${bazi.luckDirection}，${bazi.luckStart}`
+        : '需提供性別才能計算大運順逆與起運',
+    );
+    if (input.category === 'bazi') {
+      addFact(facts, '八字完整排盤', formatBaziDetails(bazi));
+    }
+  } else if (input.category === 'bazi') {
+    addFact(facts, '八字排盤狀態', '需完整出生日期與出生時間才能排出四柱。');
+  }
+
+  if (ziwei) {
+    const soulPalace = findZiweiPalace(ziwei, '命宮');
+    addFact(
+      facts,
+      '紫微命宮',
+      `命宮在${ziwei.soulPalaceBranch}，身宮在${ziwei.bodyPalaceBranch}，命主${ziwei.soul}，身主${ziwei.body}，五行局${ziwei.fiveElementsClass}`,
+    );
+    addFact(facts, '紫微命宮主星', formatZiweiPalaceSummary(soulPalace));
+    addFact(facts, '紫微官祿宮', formatZiweiPalaceSummary(findZiweiPalace(ziwei, '官祿')));
+    addFact(facts, '紫微財帛宮', formatZiweiPalaceSummary(findZiweiPalace(ziwei, '財帛')));
+    addFact(facts, '紫微夫妻宮', formatZiweiPalaceSummary(findZiweiPalace(ziwei, '夫妻')));
+    if (input.category === 'ziwei') {
+      addFact(facts, '紫微十二宮星曜', formatZiweiDetails(ziwei));
+    }
+  } else if (input.category === 'ziwei') {
+    addFact(facts, '紫微排盤狀態', '需完整出生日期、出生時間與性別才能排出紫微十二宮。');
+  }
+
   return {
     facts,
-    notes: categoryNotes(input.category),
+    notes: categoryNotes(input.category, bazi, ziwei, input),
+    bazi: bazi ?? undefined,
+    ziwei: ziwei ?? undefined,
   };
 }
 
 export function formatFortuneChartForPrompt(chart: FortuneChartData): string {
+  const factLines = chart.facts.flatMap((fact) => {
+    if (!fact.value.includes('\n')) return [`- ${fact.label}：${fact.value}`];
+    return [`- ${fact.label}：`, ...fact.value.split('\n').map((line) => `  ${line}`)];
+  });
   const lines = [
     '【系統排盤資料】',
     '以下資料由程式先行換算，解讀時必須直接採用；不可自行重算、改寫或補成另一套日期與時辰。',
-    ...chart.facts.map((fact) => `- ${fact.label}：${fact.value}`),
+    ...factLines,
   ];
 
   if (chart.notes.length) {

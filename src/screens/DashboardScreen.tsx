@@ -15,6 +15,18 @@ const MIN_BIRTH_YEAR = 1900;
 const MAX_BIRTH_YEAR = new Date().getFullYear();
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1));
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => String(i + 1));
+const CHART_SUMMARY_LABELS = [
+  '生肖',
+  '農曆年干支',
+  '時辰地支',
+  '生命靈數',
+  '八字四柱',
+  '八字日主',
+  '八字五行分布',
+  '八字大運起運',
+  '紫微命宮',
+  '紫微命宮主星',
+];
 
 interface ReportTableData {
   headers: string[];
@@ -323,12 +335,61 @@ function ReportTableView({
   );
 }
 
+function GeneratingStatus({
+  categoryName,
+  usageType,
+}: {
+  categoryName: string;
+  usageType: string | null;
+}) {
+  const premium = usageType === 'premium_report';
+  const tarot = usageType === 'tarot';
+  const title = premium ? '深度報告產生中' : tarot ? '神諭牌陣解讀中' : '命理解讀產生中';
+  const steps = premium
+    ? ['校對出生國曆、農曆與命理時辰', '排出八字四柱、大運與紫微十二宮', '整理性格底盤、事業財運與感情脈絡', '撰寫專業命理老師深度書面報告']
+    : tarot
+      ? ['抽取牌陣與正逆位', '整理目前狀態與阻礙', '生成表格式短讀與行動建議']
+      : ['校對算命者資料', '整理系統排盤重點', '生成表格式短讀與近期建議'];
+
+  return (
+    <div
+      className="mt-8 rounded-[1.5rem] border border-[#A89882]/25 bg-black/30 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.28)] md:rounded-[2rem] md:p-6"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#A89882]/30 bg-[#A89882]/10">
+          <Icons.Loader2 size={18} className="animate-spin text-[#A89882]" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold tracking-[0.24em] text-[#A89882]/75">GENERATING</p>
+          <h3 className="mt-1 text-base font-light tracking-widest text-white">{title}</h3>
+          <p className="mt-2 text-sm font-light leading-7 tracking-wide text-slate-300">
+            {categoryName} 正在生成，深度報告需要較完整的校盤與撰寫時間，請稍候。
+          </p>
+        </div>
+      </div>
+      <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        {steps.map((step, index) => (
+          <div key={step} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] px-3 py-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#A89882]/15 text-[10px] text-[#A89882]">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <span className="text-sm font-light leading-6 tracking-wide text-slate-200">{step}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function DashboardScreen() {
   const nav = useNavigate();
   const { subscription, isAdmin } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
   const [result, setResult] = useState<string>('');
   const [busy, setBusy] = useState(false);
+  const [busyType, setBusyType] = useState<string | null>(null);
 
   const [question, setQuestion] = useState('');
   const [fullName, setFullName] = useState('');
@@ -357,7 +418,7 @@ export function DashboardScreen() {
   });
   const chartSummaryFacts = fortuneChartData.facts.filter(
     (fact) =>
-      ['生肖', '農曆年干支', '時辰地支', '生命靈數'].includes(fact.label) &&
+      CHART_SUMMARY_LABELS.includes(fact.label) &&
       fact.value !== '未提供',
   );
   const zodiacFact = fortuneChartData.facts.find((fact) => fact.label === '生肖')?.value ?? '未提供';
@@ -395,6 +456,7 @@ export function DashboardScreen() {
     }
 
     setBusy(true);
+    setBusyType(usageType);
     setResult('');
     try {
       const res = await api.generate(usageType, {
@@ -415,6 +477,7 @@ export function DashboardScreen() {
       setResult('目前服務暫時無法使用，請稍後再試。');
     } finally {
       setBusy(false);
+      setBusyType(null);
     }
   };
 
@@ -624,7 +687,11 @@ export function DashboardScreen() {
                 disabled={busy}
                 className="flex-1 py-4 bg-[#A89882] text-[#050508] font-medium tracking-[0.2em] rounded-full hover:bg-white transition-all shadow-[0_0_20px_rgba(168,152,130,0.3)] flex justify-center items-center gap-2 disabled:opacity-60"
               >
-                {busy ? '解讀中…' : selectedCat.id === 'tarot' ? '抽牌解讀' : '開始解讀'}
+                {busy && busyType !== 'premium_report'
+                  ? '解讀中…'
+                  : selectedCat.id === 'tarot'
+                    ? '抽牌解讀'
+                    : '開始解讀'}
                 <Icons.Sparkles size={16} />
               </button>
               <button
@@ -632,12 +699,16 @@ export function DashboardScreen() {
                 disabled={busy}
                 className="flex-1 py-4 bg-transparent border border-[#A89882]/60 text-[#A89882] font-medium tracking-[0.2em] rounded-full hover:bg-[#A89882] hover:text-[#050508] transition-all flex justify-center items-center gap-2 disabled:opacity-60"
               >
-                深度報告
+                {busy && busyType === 'premium_report' ? '報告生成中…' : '深度報告'}
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#A89882]/20 tracking-widest">PRO</span>
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {busy && selectedCat && (
+        <GeneratingStatus categoryName={selectedCat.name} usageType={busyType} />
       )}
 
       {result && (
